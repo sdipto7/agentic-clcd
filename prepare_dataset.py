@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Filter raw XLCoST and CodeNet JSON dumps to Java–Python pairs and add numeric labels.
+Normalize experiment datasets to a common Java-Python schema with stable IDs.
 
 Run once from the project root before experiments that use ``data/*.json``.
 """
@@ -19,6 +19,8 @@ if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
 from src.constants import (  # noqa: E402
+    DATASET_CODENET,
+    DATASET_XLCOST,
     JAVA_LANGUAGE_IDENTIFIER,
     PYTHON_LANGUAGE_IDENTIFIER,
     RAW_JAVA_CN_PATH,
@@ -32,8 +34,10 @@ def _load_json_array(path: str) -> List[dict[str, Any]]:
     """Load a JSON array from disk or raise a clear error."""
     if not os.path.isfile(path):
         raise FileNotFoundError(f"Missing raw file: {path}")
+
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
+
     if not isinstance(data, list):
         raise ValueError(f"Expected top-level JSON array in {path}")
     return data
@@ -59,26 +63,57 @@ def _add_label(row: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _filter_dataset(records: List[dict[str, Any]]) -> Tuple[List[dict[str, Any]], int]:
+def _normalize_record(
+    row: dict[str, Any],
+    dataset_name: str,
+    pair_index: int,
+) -> dict[str, Any]:
+    """Normalize one row while preserving all original metadata fields."""
+    out = _add_label(row)
+    
+    try:
+        code_a = str(out["codeA"])
+        code_b = str(out["codeB"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(f"Malformed code fields: {exc}") from exc
+
+    out["codeA"] = code_a
+    out["codeB"] = code_b
+    out["pair_id"] = f"{dataset_name}_{pair_index}"
+    out["dataset"] = dataset_name
+
+    return out
+
+
+def _filter_dataset(
+    records: List[dict[str, Any]],
+    dataset_name: str,
+) -> Tuple[List[dict[str, Any]], int]:
     """
-    Filter to Java–Python rows with valid labels.
+    Filter to Java-Python rows and normalize while preserving metadata.
 
     Returns:
-        Tuple of (kept records with label, discarded count).
+        Tuple of (kept normalized records, discarded count).
     """
     kept: List[dict[str, Any]] = []
     discarded = 0
+
     for row in records:
-        if not isinstance(row, dict):
+        if not isinstance(row, dict) or not _keep_record(row):
             discarded += 1
             continue
-        if not _keep_record(row):
-            discarded += 1
-            continue
+        
         try:
-            kept.append(_add_label(row))
+            kept.append(
+                _normalize_record(
+                    row,
+                    dataset_name=dataset_name,
+                    pair_index=len(kept),
+                )
+            )
         except ValueError:
             discarded += 1
+
     return kept, discarded
 
 
@@ -102,16 +137,25 @@ def _summarize(name: str, path: str, rows: List[dict[str, Any]], discarded: int)
 
 
 def main() -> None:
-    """CLI entry: filter both corpora."""
-    parser = argparse.ArgumentParser(description="Build Java–Python filtered datasets.")
-    parser.parse_args()
+    """Build and write the normalized Java-Python datasets under the data directory."""
 
-    for label, raw_path, out_path in (
-        ("XLCoST (java_xl.json)", RAW_JAVA_XL_PATH, DATA_JAVA_PYTHON_XL_PATH),
-        ("CodeNet (java_cn.json)", RAW_JAVA_CN_PATH, DATA_JAVA_PYTHON_CN_PATH),
+    for label, dataset_name, source_path, out_path in (
+        (
+            "XLCoST (java_xl.json)",
+            DATASET_XLCOST,
+            RAW_JAVA_XL_PATH,
+            DATA_JAVA_PYTHON_XL_PATH,
+        ),
+        (
+            "CodeNet (java_cn.json)",
+            DATASET_CODENET,
+            RAW_JAVA_CN_PATH,
+            DATA_JAVA_PYTHON_CN_PATH,
+        ),
     ):
-        records = _load_json_array(raw_path)
-        kept, discarded = _filter_dataset(records)
+
+        records = _load_json_array(source_path)
+        kept, discarded = _filter_dataset(records, dataset_name=dataset_name)
         _write_output(out_path, kept)
         _summarize(label, out_path, kept, discarded)
         print()
