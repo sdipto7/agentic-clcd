@@ -1,0 +1,9 @@
+langchain>=1.0.0
+langchain-classic>=1.0.0
+langchain-openai
+langchain-community
+python-dotenv
+openai
+pyyaml
+pandas
+tqdm
