@@ -81,30 +81,3 @@ def _load_registry() -> Dict[str, dict[str, Any]]:
 
 # Populated at import time for reuse across workflows.
 SKILL_REGISTRY: Dict[str, dict[str, Any]] = _load_registry()
-
-
-def build_agent_system_prompt() -> str:
-    """
-    Construct the system prompt listing skills and mandatory load_skill usage.
-
-    Returns:
-        System prompt string for the Pipeline 3 agent.
-    """
-    lines = [
-        "You are a research assistant performing cross-language Java-Python clone detection.",
-        "You must use the provided tools only (no manual file access).",
-        "Before substantive work, call `list_skills`, then call `load_skill` for each skill you need.",
-        "Never assume skill text without loading it through `load_skill`.",
-        "Follow loaded skills exactly to extract algorithms, compare them, and record the final verdict.",
-        "When you are ready to finalize, call `write_result` with your prediction and rationale.",
-        "",
-        "Available skills (name — description):",
-    ]
-    for info in sorted(SKILL_REGISTRY.values(), key=lambda x: x["name"]):
-        lines.append(f"- {info['name']}: {info['description']}")
-    lines.append("")
-    lines.append(
-        "Use `compare_and_decide` when you need side-by-side text for analysis. "
-        "Use plain tool arguments; do not fabricate observations."
-    )
-    return "\n".join(lines)

@@ -29,15 +29,22 @@ logger = get_logger(__name__)
 
 
 def _goal_message(rec: dict[str, Any]) -> str:
-    """Format the user task for the agent."""
+    """
+    Format the detection task for the agent. The agent autonomously decides how to use its skills and tools to complete the task.
+
+    Args:
+        rec: a normalized dataset record with pair_id, codeA, codeB
+
+    Returns:
+        Goal string passed to the agent executor.
+    """
     return (
-        f"Detect whether the following Java and Python code fragments are cross-language "
-        f"clones for pair {rec['pair_id']}.\n\n"
-        f"Java code:\n{rec['codeA']}\n\n" 
+        f"Determine whether the following Java and Python code fragments "
+        f"are cross-language clones (pair ID: {rec['pair_id']}).\n\n"
+        f"Java code:\n{rec['codeA']}\n\n"
         f"Python code:\n{rec['codeB']}\n\n"
-        f"Ground truth label: {rec['label']} (1=clone, 0=not clone). "
-        f"Use your available skills and tools to complete this task, and "
-        f"finish by calling write_result with your final judgment."
+        f"Use your available skills and tools to reach a verdict, "
+        f"then record your final result using write_result."
     )
 
 
