@@ -69,53 +69,61 @@ def get_last_predicted_label() -> Optional[str]:
 @tool
 def list_skills() -> str:
     """
-    List skills available in the registry with short descriptions.
+    Return all available skills with their names and descriptions.
+    Call this when you are unsure what skills exist or want to decide which skill is relevant for your current task.
 
-    Call this first to decide which specialized instructions to load next.
+    Returns:
+        A formatted list of skill names and their descriptions.
     """
     if not SKILL_REGISTRY:
         return "No skills were discovered on disk."
+
     lines = ["Available skills (call load_skill with the name):"]
     for info in sorted(SKILL_REGISTRY.values(), key=lambda x: x["name"]):
         lines.append(f"- {info['name']}: {info['description']}")
+
     return "\n".join(lines)
 
 
 @tool
 def load_skill(skill_name: str) -> str:
     """
-    Load the full markdown instructions for a named skill.
+    Retrieve the full instructions for a skill by name.
+    Call this before performing any task that a skill covers - never assume skill content without loading it first.
+    Use list_skills first if you are unsure of the exact skill name.
 
     Args:
-        skill_name: Exact `name` from skill front matter (e.g., algorithm_extraction).
-
+        skill_name: exact name from the skill list (e.g., algorithm_extraction).
     Returns:
-        Skill body text, or an error message if unknown.
+        Full skill instructions as plain text, or an error message if not found.
     """
     if skill_name in _skill_body_cache:
         return _skill_body_cache[skill_name]
+
     entry = SKILL_REGISTRY.get(skill_name.strip())
     if not entry:
         known = ", ".join(sorted(SKILL_REGISTRY.keys())) or "(none)"
         return f"Unknown skill {skill_name!r}. Known skills: {known}"
+
     body = entry["body"]
     _skill_body_cache[skill_name] = body
     logger.info("Skill loaded into cache: %s", skill_name)
+
     return body
 
 
 @tool
 def compare_and_decide(content_a: str, content_b: str, comparison_type: str) -> str:
     """
-    Present two texts side by side for manual reasoning (no LLM call inside the tool).
+    Display two code fragments or algorithms side by side for comparison.
+    Call this when you need to analyze two pieces of content together before making a clone detection decision.
 
     Args:
-        content_a: First fragment (e.g., Java source or Algorithm A).
-        content_b: Second fragment (e.g., Python source or Algorithm B).
-        comparison_type: Either "source_code" or "algorithm" (controls labels only).
-
+        content_a: first fragment — Java source code or Algorithm A.
+        content_b: second fragment — Python source code or Algorithm B.
+        comparison_type: "source_code" when comparing raw code, "algorithm" when comparing extracted pseudocode.
     Returns:
-        A formatted string suitable for reading in the agent trace.
+        A formatted string showing both fragments labeled and side by side.
     """
     ct = comparison_type.strip()
     if ct not in (COMPARE_TYPE_SOURCE_CODE, COMPARE_TYPE_ALGORITHM):
@@ -123,8 +131,10 @@ def compare_and_decide(content_a: str, content_b: str, comparison_type: str) -> 
             f"Invalid comparison_type {comparison_type!r}. "
             f'Use "{COMPARE_TYPE_SOURCE_CODE}" or "{COMPARE_TYPE_ALGORITHM}".'
         )
+
     label_left = "Java" if ct == COMPARE_TYPE_SOURCE_CODE else "Algorithm A (Java side)"
     label_right = "Python" if ct == COMPARE_TYPE_SOURCE_CODE else "Algorithm B (Python side)"
+
     return (
         f"=== {label_left} ===\n{content_a.strip()}\n\n"
         f"=== {label_right} ===\n{content_b.strip()}\n"
@@ -134,18 +144,15 @@ def compare_and_decide(content_a: str, content_b: str, comparison_type: str) -> 
 @tool
 def write_result(predicted_label: str, confidence: float, reasoning: str) -> str:
     """
-    Persist one clone-detection outcome via the active ResultWriter.
-
-    Call only after you have followed the skills and formed a final judgment.
-    predicted_label must be CLONE or NOT_CLONE (uppercase recommended).
+    Record the final clone detection verdict for the current pair. Call this exactly once after you have completed your analysis
+    and formed a final judgment. Do not call this more than once per pair - duplicate calls will be rejected.
 
     Args:
-        predicted_label: CLONE or NOT_CLONE.
-        confidence: Value between 0.0 and 1.0.
-        reasoning: At most ~100 words; keep concise.
-
+        predicted_label: your verdict - must be exactly CLONE or NOT_CLONE.
+        confidence: how confident you are in the verdict, between 0.0 and 1.0.
+        reasoning: brief explanation of your decision in max 100 words.
     Returns:
-        Confirmation string, or an error description.
+        Confirmation message if recorded successfully, or an error description.
     """
     global _write_result_called, _last_predicted_label
     if _write_result_called:
@@ -190,6 +197,7 @@ def write_result(predicted_label: str, confidence: float, reasoning: str) -> str
         conf,
         elapsed,
     )
+
     return f"Recorded result for {_context_pair_id}: {pred} (confidence {conf:.3f})."
 
 
