@@ -1,5 +1,6 @@
-langchain>=1.0.0
-langchain-classic>=1.0.0
+langchain
+langchain-classic
+langchain_core
 langchain-openai
 langchain-community
 python-dotenv
