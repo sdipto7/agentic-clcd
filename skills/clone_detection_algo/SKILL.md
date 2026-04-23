@@ -1,21 +1,17 @@
 ---
 name: clone_detection_algo
-description: Use when you already have two plain-English algorithm descriptions and must judge if they are semantically equivalent.
+description: Use this skill to detect clones by comparing two extracted pseudocode algorithms. Best suited for longer or logically complex fragments where extracting the core algorithm first makes comparison clearer and more reliable. Requires algorithm_extraction to be applied to both code fragments first.
 ---
 
-# Algorithm-based clone detection
-
-Apply this skill **after** both sides have been expressed as language-agnostic pseudocode (see `algorithm_extraction`).
+# Algorithm-Based Clone Detection
+Apply this skill **after** both code fragments have been converted to language-agnostic pseudocode using the algorithm_extraction skill.
 
 ## Steps
-
-1. **Read Algorithm A** (from Java) and **Algorithm B** (from Python) carefully, including every numbered step and edge-case branch.
-2. **Align logical structure**: match loops, recursion, data-structure operations, and return values conceptually (not by line count).
-3. **Check semantic equivalence**: they are clones only if a user could not observe a behavioral difference on any input allowed by both descriptions. Minor wording differences are fine; missing branches or different orderings are not.
-4. **Choose a verdict**: `CLONE` if equivalent, otherwise `NOT_CLONE`.
-5. **Emit JSON only** (no markdown fences) with exactly:
-   ```json
-   {"verdict": "CLONE" or "NOT_CLONE", "confidence": 0.0-1.0, "reasoning": "<=100 words"}
-   ```
-
-Keep reasoning concise (≤100 words) and point to the steps that matched or diverged.
+1. **Read both algorithms carefully**: for each algorithm identify the entry point, the role of each function, data structures used, and how data flows through the logic.
+2. **Compare semantic equivalence**: align loops, recursion, conditions, data structure operations, and return values conceptually — not by line count. They are clones only if
+   no functional difference could be observed on any valid input. Minor wording differences are fine; missing branches, different operation orderings, or different return values are not.
+3. **Decide**:
+   - Semantically equivalent → `CLONE`
+   - Any behavioral difference → `NOT_CLONE`
+4. **Output strictly JSON — no markdown fences, no extra text:**
+   {"verdict": "CLONE" or "NOT_CLONE", "confidence": 0.0-1.0, "reasoning": "max 100 words identifying the steps that matched or diverged"}

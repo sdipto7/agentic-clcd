@@ -1,21 +1,20 @@
 ---
 name: clone_detection_direct
-description: Use when you must decide if Java and Python source code fragments are cross-language clones without an intermediate algorithm write-up.
+description: Use this skill to detect clones by comparing the functional behavior of raw Java and Python source code directly. Best suited for short or logically simple code fragments where the intent is easy to read from the code itself.
 ---
 
-# Direct cross-language clone detection
+# Direct Cross-Language Clone Detection
 
-Use this skill when comparing **raw source** (not extracted pseudocode).
+Use this skill when comparing **raw source code** fragments directly.
 
 ## Steps
 
-1. **Understand Java**: Summarize inputs, outputs, data structures, control flow, and important edge cases purely in terms of behavior.
-2. **Understand Python**: Do the same independently, ignoring naming and library differences.
-3. **Compare behavior**: Check that both fragments implement the same algorithm—same ordering of operations, equivalent conditions, matching handling of empty inputs, errors, and boundary values. Syntax differences are irrelevant; semantic differences are not.
-4. **Decide** whether they are functionally the same (`CLONE`) or not (`NOT_CLONE`).
-5. **Respond with JSON only** (no markdown fences, no extra prose) using exactly:
-   ```json
-   {"verdict": "CLONE" or "NOT_CLONE", "confidence": 0.0-1.0, "reasoning": "<=100 words"}
-   ```
-
-Keep `reasoning` under 100 words and cite the decisive behavioral evidence.
+1. **Analyze the Java fragment**: identify its inputs, outputs, data structures, control flow, and how it handles edge cases and errors — purely in terms of behavior, not syntax.
+2. **Analyze the Python fragment**: do the same independently. Ignore naming conventions, library choices, and language idioms.
+3. **Syntax is irrelevant. Semantics are not.** Two fragments can look completely different and still be clones. Two fragments can look similar and not be clones. Judge behavior only.
+4. **Compare behavior**: do both fragments implement the same logic? Check operation ordering, equivalent conditions, and matching handling of empty inputs, errors, and boundary values.
+5. **Decide**:
+   - Functionally the same → `CLONE`
+   - Functionally different → `NOT_CLONE`
+6. **Output strictly JSON — no markdown fences, no extra text:**
+   {"verdict": "CLONE" or "NOT_CLONE", "confidence": 0.0-1.0, "reasoning": "max 100 words citing the decisive behavioral evidence"}
