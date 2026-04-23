@@ -15,6 +15,7 @@ from src.constants import AGENT_MAX_ITERATIONS
 from src.skills import SKILL_REGISTRY
 from src.tools import get_agent_tools
 
+
 def build_agent_system_prompt() -> str:
     """
     Build the Pipeline 3 agent system prompt.
@@ -46,6 +47,7 @@ def build_agent_system_prompt() -> str:
         "5. Never fabricate tool outputs - only use what tools return.\n\n"
         f"Available skills:\n{skill_lines}"
     )
+
 
 def get_react_prompt_template() -> str:
     """

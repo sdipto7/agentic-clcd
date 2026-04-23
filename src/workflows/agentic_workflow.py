@@ -68,40 +68,40 @@ def run_agentic_workflow(
     """
     executor = build_react_executor(llm)
 
-    for position, rec in enumerate(tqdm(records, desc=f"agentic/{model_alias}"), start=1):
+    for position, record in enumerate(tqdm(records, desc=f"agentic/{model_alias}"), start=1):
         set_active_result_writer(
             writer,
-            pair_id=rec["pair_id"],
-            dataset=rec["dataset"],
-            ground_truth=rec["label"],
+            pair_id=record["pair_id"],
+            dataset=record["dataset"],
+            ground_truth=record["label"],
         )
         t0 = time.perf_counter()
         try:
-            executor.invoke({"input": _goal_message(rec)})
+            executor.invoke({"input": _goal_message(record)})
         except Exception as exc:
-            logger.exception("Agent crashed for pair %s: %s", rec["pair_id"], exc)
+            logger.exception("Agent crashed for pair %s: %s", record["pair_id"], exc)
         elapsed = time.perf_counter() - t0
 
         if not was_write_result_called():
             logger.warning(
                 "Agent did not call write_result for %s; recording ERROR.",
-                rec["pair_id"],
+                record["pair_id"],
             )
             writer.record_result(
-                pair_id=rec["pair_id"],
-                dataset=rec["dataset"],
-                ground_truth=rec["label"],
+                pair_id=record["pair_id"],
+                dataset=record["dataset"],
+                ground_truth=record["label"],
                 predicted_label=ERROR,
                 confidence=0.0,
                 reasoning="Agent finished without write_result or tool failure.",
                 processing_time_seconds=elapsed,
             )
 
-        gt_label = LABEL_TO_VERDICT.get(rec["label"], NOT_CLONE)
+        gt_label = LABEL_TO_VERDICT.get(record["label"], NOT_CLONE)
         predicted = get_last_predicted_label() if was_write_result_called() else ERROR
         logger.info(
             "pair_id=%s pipeline=%s ground_truth=%s predicted=%s time=%.3fs",
-            rec["pair_id"],
+            record["pair_id"],
             PIPELINE_AGENTIC,
             gt_label,
             predicted,

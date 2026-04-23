@@ -66,17 +66,17 @@ def run_algo_based_workflow(
     Returns:
         Summary dict from ``writer.get_summary()``.
     """
-    for position, rec in enumerate(tqdm(records, desc=f"algo_based/{model_alias}"), start=1):
+    for position, record in enumerate(tqdm(records, desc=f"algo_based/{model_alias}"), start=1):
         t0 = time.perf_counter()
-        pair_id = rec["pair_id"]
+        pair_id = record["pair_id"]
 
         java_prompt = ALGO_EXTRACTION_PROMPT.format(
             language=JAVA_LANGUAGE_IDENTIFIER,
-            source_code=rec["codeA"],
+            source_code=record["codeA"],
         )
         py_prompt = ALGO_EXTRACTION_PROMPT.format(
             language="Python",
-            source_code=rec["codeB"],
+            source_code=record["codeB"],
         )
 
         algo_java = invoke_with_single_retry(llm, java_prompt)
@@ -110,15 +110,15 @@ def run_algo_based_workflow(
 
         writer.record_result(
             pair_id=pair_id,
-            dataset=rec["dataset"],
-            ground_truth=rec["label"],
+            dataset=record["dataset"],
+            ground_truth=record["label"],
             predicted_label=verdict,
             confidence=confidence,
             reasoning=reasoning,
             processing_time_seconds=elapsed,
         )
 
-        gt_label = LABEL_TO_VERDICT.get(rec["label"], NOT_CLONE)
+        gt_label = LABEL_TO_VERDICT.get(record["label"], NOT_CLONE)
         logger.info(
             "pair_id=%s pipeline=%s ground_truth=%s predicted=%s time=%.3fs",
             pair_id,

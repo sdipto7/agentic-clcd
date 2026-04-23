@@ -55,32 +55,32 @@ def run_direct_workflow(
     Returns:
         Summary dict from ``writer.get_summary()``.
     """
-    for position, rec in enumerate(tqdm(records, desc=f"direct/{model_alias}"), start=1):
+    for position, record in enumerate(tqdm(records, desc=f"direct/{model_alias}"), start=1):
         t0 = time.perf_counter()
-        prompt = DIRECT_DETECTION_PROMPT.format(codeA=rec["codeA"], codeB=rec["codeB"])
+        prompt = DIRECT_DETECTION_PROMPT.format(codeA=record["codeA"], codeB=record["codeB"])
         raw = invoke_with_single_retry(llm, prompt)
         elapsed = time.perf_counter() - t0
 
         if not raw.strip():
             verdict, confidence, reasoning = ERROR, 0.5, "LLM call failed after retry."
-            logger.error("Empty LLM response for pair %s", rec["pair_id"])
+            logger.error("Empty LLM response for pair %s", record["pair_id"])
         else:
             verdict, confidence, reasoning = interpret_detection_response(raw)
 
         writer.record_result(
-            pair_id=rec["pair_id"],
-            dataset=rec["dataset"],
-            ground_truth=rec["label"],
+            pair_id=record["pair_id"],
+            dataset=record["dataset"],
+            ground_truth=record["label"],
             predicted_label=verdict,
             confidence=confidence,
             reasoning=reasoning,
             processing_time_seconds=elapsed,
         )
 
-        gt_label = LABEL_TO_VERDICT.get(rec["label"], NOT_CLONE)
+        gt_label = LABEL_TO_VERDICT.get(record["label"], NOT_CLONE)
         logger.info(
             "pair_id=%s pipeline=%s ground_truth=%s predicted=%s time=%.3fs",
-            rec["pair_id"],
+            record["pair_id"],
             PIPELINE_DIRECT,
             gt_label,
             verdict,
