@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+"""
+Run cross-language clone-detection experiments across pipelines, models, and datasets.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+from typing import Any, Callable, Dict, List
+
+_PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+
+from src.constants import (  # noqa: E402
+    DATASET_CHOICES,
+    MODEL_CHOICES,
+    OUTPUT_DIR_BY_PIPELINE,
+    PIPELINE_AGENTIC,
+    PIPELINE_ALGO_BASED,
+    PIPELINE_CHOICES,
+    PIPELINE_DIRECT,
+    RESULTS_CSV_PREFIX,
+)
+from src.dataset_loader import DatasetLoader  # noqa: E402
+from src.llm import create_chat_model  # noqa: E402
+from src.logger import get_logger, setup_logging  # noqa: E402
+from src.result_writer import ResultWriter  # noqa: E402
+from src.workflows.agentic_workflow import run_agentic_workflow  # noqa: E402
+from src.workflows.algo_based_workflow import run_algo_based_workflow  # noqa: E402
+from src.workflows.direct_workflow import run_direct_workflow  # noqa: E402
+
+logger = get_logger(__name__)
+
+WorkflowFn = Callable[[Any, List[dict[str, Any]], ResultWriter, str], dict[str, Any]]
+
+WORKFLOW_REGISTRY: Dict[str, WorkflowFn] = {
+    PIPELINE_DIRECT: run_direct_workflow,
+    PIPELINE_ALGO_BASED: run_algo_based_workflow,
+    PIPELINE_AGENTIC: run_agentic_workflow,
+}
+
+
+def _results_csv_path(pipeline: str, model_alias: str, dataset: str) -> str:
+    """Build the CSV path for one experimental run."""
+    out_dir = OUTPUT_DIR_BY_PIPELINE[pipeline]
+    fname = f"{RESULTS_CSV_PREFIX}_{model_alias}_{dataset}.csv"
+    return os.path.join(out_dir, fname)
+
+
+def _print_run_row(
+    pipeline: str,
+    model_alias: str,
+    dataset: str,
+    summary: dict[str, Any],
+) -> None:
+    """Emit one formatted summary line after a run completes."""
+    print(
+        f"{pipeline:12} | {model_alias:14} | {dataset:8} | "
+        f"acc={summary['accuracy']:.4f} | prec={summary['precision']:.4f} | "
+        f"rec={summary['recall']:.4f} | f1={summary['f1']:.4f} | n={summary['total']}"
+    )
+
+
+def _print_table_header() -> None:
+    print(
+        f"{'pipeline':12} | {'model':14} | {'dataset':8} | "
+        f"acc      | prec     | rec      | f1       | n"
+    )
+    print("-" * 92)
+
+
+def main() -> None:
+    """Parse CLI flags and execute one explicit experiment run."""
+    setup_logging()
+    parser = argparse.ArgumentParser(description="Cross-language clone detection experiments.")
+    parser.add_argument(
+        "--pipeline",
+        choices=[c for c in PIPELINE_CHOICES if c != "all"],
+        required=True,
+        help="Pipeline to run.",
+    )
+    parser.add_argument(
+        "--model",
+        choices=[c for c in MODEL_CHOICES if c != "all"],
+        required=True,
+        help="Model alias to use.",
+    )
+    parser.add_argument(
+        "--dataset",
+        choices=[c for c in DATASET_CHOICES if c != "all"],
+        required=True,
+        help="Dataset to evaluate.",
+    )
+    args = parser.parse_args()
+
+    pipeline = args.pipeline
+    model_alias = args.model
+    dataset_name = args.dataset
+
+    _print_table_header()
+    runner = WORKFLOW_REGISTRY[pipeline]
+    llm = create_chat_model(model_alias)
+    loader = DatasetLoader(dataset_name)
+    try:
+        records = loader.load()
+    except FileNotFoundError as exc:
+        logger.error("%s", exc)
+        print(str(exc))
+        return
+
+    csv_path = _results_csv_path(pipeline, model_alias, dataset_name)
+    writer = ResultWriter(csv_path, pipeline=pipeline, model_alias=model_alias)
+    logger.info(
+        "Starting run pipeline=%s model=%s dataset=%s pairs=%s",
+        pipeline,
+        model_alias,
+        dataset_name,
+        len(records),
+    )
+    summary = runner(llm, records, writer, model_alias)
+    _print_run_row(pipeline, model_alias, dataset_name, summary)
+
+
+
+if __name__ == "__main__":
+    main()
