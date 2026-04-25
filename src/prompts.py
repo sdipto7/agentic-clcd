@@ -9,73 +9,92 @@ from __future__ import annotations
 # Pipeline 1: single-call cross-language clone decision from raw source.
 DIRECT_DETECTION_PROMPT: str = """You are an expert in program analysis and cross-language code equivalence.
 
-Decide whether the two code fragments below implement the **same functionality**.
-Ignore syntax, naming style, and library differences; focus on behavior, control flow, data transformations, and edge cases.
+BACKGROUND:
+Two code fragments are cross-language clones if they implement the same computational logic and produce the same output for the same input, regardless of the programming language, syntax, naming conventions, or library choices used.
 
-Java code:
-```java
+TASK:
+Determine whether the Java and Python code fragments below are clones.
+
+REASONING APPROACH — follow this order:
+1. Analyze the Java and Python code fragments independently: identify their inputs, outputs, data structures, control flow, and how they handle edge cases and errors.
+2. Compare their behavior: check operation ordering, equivalent conditions, and matching handling of empty inputs, boundary values, and errors.
+3. If any behavioral difference exists, they are NOT_CLONE - even if the overall structure looks similar.
+
+Java fragment:
 {codeA}
-```
 
-Python code:
-```python
+Python fragment:
 {codeB}
-```
 
-Respond with **only** a single JSON object and nothing else (no markdown fences, no commentary).
-The JSON must have exactly these keys:
-- "verdict": either "CLONE" if they are functionally the same, or "NOT_CLONE" otherwise
-- "confidence": a number between 0.0 and 1.0
-- "reasoning": at most 100 words explaining your decision
+OUTPUT RULES:
+- Respond with a single JSON object only.
+- No markdown fences, no text before or after the JSON.
+- Use exactly these keys:
+    "verdict"    : "CLONE" if functionally identical, "NOT_CLONE" otherwise
+    "confidence" : a float between 0.0 and 1.0 representing how certain you are of your verdict based on the evidence
+    "reasoning"  : max 100 words citing the specific behavioral evidence that determined your verdict
 
-Example shape (content is illustrative):
+Example output shape:
 {{"verdict": "CLONE", "confidence": 0.92, "reasoning": "Both iterate and aggregate the same way."}}
 """
 
 # Pipeline 2 step 1 & 2: extract language-agnostic algorithm from one fragment.
-ALGO_EXTRACTION_PROMPT: str = """You extract precise, language-agnostic algorithms from source code.
+ALGO_EXTRACTION_PROMPT: str = """You are an expert in program analysis and algorithm extraction.
 
-Language: {language}
+BACKGROUND:
+Your task is to convert a {language} code fragment into a precise, language-agnostic pseudocode algorithm. This pseudocode will be used 
+to compare the computational logic of two code fragments written in different programming languages to determine if they are clones.
+Accuracy and completeness are critical — every logical detail must be preserved.
 
-Source code:
-```
+SOURCE CODE ({language}):
 {source_code}
-```
 
-Produce a **plain-text** pseudocode description (not JSON):
-1. Start with **one line** summarizing what the program or entry fragment does.
-2. Then describe each function (including the entry point) as a **FUNCTION** block.
-3. Inside each block use **numbered plain-English steps** only — no programming language syntax.
-4. Preserve all logic, branches, loops, and edge cases exactly.
-5. Use generic data-structure names (e.g., list, map, set) instead of library-specific types.
+EXTRACTION RULES:
+1. Start with a single sentence summarizing what the overall code does.
+2. Describe every function including the entry point as a FUNCTION block.
+3. Inside each FUNCTION block, use numbered plain-English steps only. No syntax from any programming language whatsoever.
+4. Preserve all logic exactly — every condition, loop bound, branch, null check, empty collection check, early exit, and error path must appear. Do not simplify, merge, or omit anything.
+5. Use generic data structure names only: list, map, set, queue, stack. Never use language-specific names like ArrayList, HashMap, or dict.
+6. Do not include comments, type annotations, import descriptions, or any language-specific observations in the output.
 
-Format example (structure only):
-Summary: ...
-FUNCTION main
-  1. ...
-  2. ...
-FUNCTION helper_name
+OUTPUT FORMAT (plain text only — not JSON):
+Summary: <one sentence describing overall behavior>
+FUNCTION <name>
+  1. <first step in plain English>
+  2. <second step in plain English>
+  ...
+FUNCTION <name>
   1. ...
 """
 
 # Pipeline 2 step 3: compare two extracted algorithms for semantic equivalence.
-ALGO_DETECTION_PROMPT: str = """You compare two language-agnostic algorithm descriptions written in plain English.
+ALGO_DETECTION_PROMPT: str = """You are an expert in program analysis and algorithm equivalence.
 
-Algorithm A (from Java extraction):
----
+BACKGROUND:
+You are given two pseudocode algorithms extracted from code fragments written in different programming languages - Algorithm A from Java and Algorithm B from Python. 
+Your task is to determine whether both algorithms implement the same computational logic, meaning they are cross-language code clones. 
+This comparison is purely at the logical level - language, syntax, and naming differences are already eliminated in the pseudocode.
+
+Algorithm A (extracted from Java):
 {algorithm_a}
----
 
-Algorithm B (from Python extraction):
----
+Algorithm B (extracted from Python):
 {algorithm_b}
----
 
-Decide whether they describe the **same functionality** (same logic and behavior, including edge cases).
+REASONING APPROACH — follow this order:
+1. Read Algorithm A and Algorithm B independently: identify their entry points, the role of each function, data flow, and how they handle edge cases and errors.
+2. Compare step by step: align loops, conditions, data structure operations, and return values conceptually — not by line count.
+3. Minor wording differences in the pseudocode are acceptable. Missing branches, different operation orderings, or different return values are not - treat these as behavioral differences.
+4. If any behavioral difference exists on any valid input, the verdict is NOT_CLONE.
 
-Respond with **only** a single JSON object and nothing else (no markdown fences, no commentary).
-The JSON must have exactly these keys:
-- "verdict": "CLONE" if the algorithms are semantically equivalent, otherwise "NOT_CLONE"
-- "confidence": a number between 0.0 and 1.0
-- "reasoning": at most 100 words explaining your decision
+OUTPUT RULES:
+- Respond with a single JSON object only.
+- No markdown fences, no text before or after the JSON.
+- Use exactly these keys:
+    "verdict"    : "CLONE" if the algorithms are semantically equivalent, "NOT_CLONE" otherwise
+    "confidence" : a float between 0.0 and 1.0 representing how certain you are of your verdict based on the evidence
+    "reasoning"  : max 100 words citing the specific steps that matched or diverged to justify your verdict
+
+Example output shape:
+{{"verdict": "CLONE", "confidence": 0.91, "reasoning": "Both algorithms iterate through the list maintaining a running maximum and return it after the loop. Edge case handling for empty input is identical in both - returning null immediately. Operation ordering and conditions match exactly."}}
 """
