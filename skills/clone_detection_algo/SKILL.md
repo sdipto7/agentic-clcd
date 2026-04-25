@@ -6,12 +6,33 @@ description: Use this skill to detect clones by comparing two extracted pseudoco
 # Algorithm-Based Clone Detection
 Apply this skill **after** both code fragments have been converted to language-agnostic pseudocode using the algorithm_extraction skill.
 
-## Steps
-1. **Read both algorithms carefully**: for each algorithm identify the entry point, the role of each function, data structures used, and how data flows through the logic.
-2. **Compare semantic equivalence**: align loops, recursion, conditions, data structure operations, and return values conceptually — not by line count. They are clones only if
-   no functional difference could be observed on any valid input. Minor wording differences are fine; missing branches, different operation orderings, or different return values are not.
-3. **Decide**:
-   - Semantically equivalent → `CLONE`
-   - Any behavioral difference → `NOT_CLONE`
-4. **Output strictly JSON — no markdown fences, no extra text:**
-   {"verdict": "CLONE" or "NOT_CLONE", "confidence": 0.0-1.0, "reasoning": "max 100 words identifying the steps that matched or diverged"}
+## Background
+
+You are comparing two pseudocode algorithms - Algorithm A extracted from Java and Algorithm B extracted from Python. Your task is to determine whether both algorithms implement the same computational logic, meaning they are cross-language code clones. This comparison is purely at the logical level — language, syntax, and naming differences are already eliminated in the pseudocode.
+
+
+
+## Reasoning Approach — follow this order
+
+1. **Read Algorithm A and Algorithm B independently**: identify the entry point, the role of each function, data flow, and how each algorithm handles edge cases and errors.
+2. **Compare step by step**: align loops, conditions, data structure operations, and return values conceptually — not by line count.
+3. **Apply these rules during comparison**:
+   - Minor wording differences in the pseudocode are acceptable.
+   - Missing branches, different operation orderings, or different return values are not acceptable — treat these as behavioral differences.
+   - If any behavioral difference exists on any valid input, the verdict is `NOT_CLONE`.
+4. **Decide**:
+   - Semantically equivalent on all valid inputs → `CLONE`
+   - Any behavioral difference exists → `NOT_CLONE`
+
+## Important Rule
+This comparison is purely logical. Do not reintroduce any language-specific reasoning - the pseudocode has already eliminated syntax and naming differences. Judge computational logic only.
+
+## Output
+Respond with a single JSON object only. No markdown fences, no text before or after the JSON.
+Use exactly these keys:
+"verdict"    : "CLONE" if semantically equivalent, "NOT_CLONE" otherwise
+"confidence" : a float between 0.0 and 1.0 representing how certain you are of your verdict based on the evidence
+"reasoning"  : max 100 words citing the specific steps that matched or diverged to justify your verdict
+
+Example output shape:
+{{"verdict": "CLONE", "confidence": 0.91, "reasoning": "Both algorithms iterate through the list maintaining a running maximum and return it after the loop. Edge case handling for empty input is identical in both - returning null immediately. Operation ordering and conditions match exactly."}}

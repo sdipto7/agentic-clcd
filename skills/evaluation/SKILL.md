@@ -1,25 +1,25 @@
 ---
 name: evaluation
-description: Use when you are ready to finalize a clone decision and must persist it through the experiment tooling.
+description: Use when you have reached a final clone detection verdict and need to record it using the write_result tool.
 ---
 
-# Recording a clone detection result
+# Recording a Clone Detection Result
+Use this skill after you have completed your analysis and formed a final verdict. This is the last step for every pair.
 
-Complete this checklist **before** calling the `write_result` tool.
+## Before Calling write_result — Confirm You Have
+1. `pair_id` for the active pair (provided in the task text),
+2. Your final **verdict**: exactly `CLONE` or `NOT_CLONE`. Use underscore form - `NOT_CLONE`, never `NOT CLONE`.
+3. A **confidence** score between 0.0 and 1.0 representing how certain you are of your verdict based on the evidence.
+3. A **reasoning** string of max 100 words citing the specific behavioral evidence that determined your verdict.
 
-## Steps
+## Calling write_result
+Call `write_result` with exactly these arguments:
+- `predicted_label` : your verdict string (CLONE or NOT_CLONE)
+- `confidence`      : your confidence score (0.0 to 1.0)
+- `reasoning`       : your evidence summary 
 
-1. **Confirm you have**:
-   - `pair_id` for the active pair (provided in the task text),
-   - `ground_truth` label (1 = clone, 0 = non-clone — informational only),
-   - your final `predicted` verdict (`CLONE` or `NOT_CLONE`),
-   - a calibrated `confidence` between `0.0` and `1.0`,
-   - `reasoning` (≤100 words) summarizing evidence.
-2. **Validate the verdict string** is exactly `CLONE` or `NOT_CLONE` (underscore form for `NOT_CLONE` when using the tool).
-3. **Call** `write_result` with arguments:
-   - `predicted_label`
-   - `confidence`
-   - `reasoning`
-4. After the tool returns success, **stop** further tool calls for that pair unless you must fix an earlier mistake (avoid duplicate writes).
+The tool automatically binds the pair_id, dataset, and timing - do not pass these yourself.
 
-The tool binds `pair_id`, dataset, and timing automatically; do not invent a different identifier.
+## Important Rules
+- Call `write_result` exactly once per pair — never twice. Duplicate calls will be rejected by the tool.
+- Do not call `write_result` before completing your full analysis. Record only your final judgment.
