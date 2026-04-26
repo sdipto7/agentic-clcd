@@ -7,13 +7,9 @@ description: Use this skill to detect clones by comparing two extracted pseudoco
 Apply this skill **after** both code fragments have been converted to language-agnostic pseudocode using the algorithm_extraction skill.
 
 ## Background
-
 You are comparing two pseudocode algorithms - Algorithm A extracted from Java and Algorithm B extracted from Python. Your task is to determine whether both algorithms implement the same computational logic, meaning they are cross-language code clones. This comparison is purely at the logical level — language, syntax, and naming differences are already eliminated in the pseudocode.
 
-
-
 ## Reasoning Approach — follow this order
-
 1. **Read Algorithm A and Algorithm B independently**: identify the entry point, the role of each function, data flow, and how each algorithm handles edge cases and errors.
 2. **Compare step by step**: align loops, conditions, data structure operations, and return values conceptually — not by line count.
 3. **Apply these rules during comparison**:
@@ -28,11 +24,9 @@ You are comparing two pseudocode algorithms - Algorithm A extracted from Java an
 This comparison is purely logical. Do not reintroduce any language-specific reasoning - the pseudocode has already eliminated syntax and naming differences. Judge computational logic only.
 
 ## Output
-Respond with a single JSON object only. No markdown fences, no text before or after the JSON.
-Use exactly these keys:
-"verdict"    : "CLONE" if semantically equivalent, "NOT_CLONE" otherwise
+Once you have reached your verdict, you should have all three values needed to call write_result:
+"verdict"    : "CLONE" if functionally identical, "NOT_CLONE" otherwise
 "confidence" : a float between 0.0 and 1.0 representing how certain you are of your verdict based on the evidence
-"reasoning"  : max 100 words citing the specific steps that matched or diverged to justify your verdict
+"reasoning"  : max 100 words citing the specific behavioral evidence that determined your verdict
 
-Example output shape:
-{{"verdict": "CLONE", "confidence": 0.91, "reasoning": "Both algorithms iterate through the list maintaining a running maximum and return it after the loop. Edge case handling for empty input is identical in both - returning null immediately. Operation ordering and conditions match exactly."}}
+Pass these values directly as arguments to the write_result tool.

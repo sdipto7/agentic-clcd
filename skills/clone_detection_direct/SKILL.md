@@ -23,11 +23,9 @@ Two code fragments are cross-language clones if they implement the same computat
   is `NOT_CLONE` — even if the overall structure looks similar.
 
 ## Output
-Respond with a single JSON object only. No markdown fences, no text before or after the JSON.
-Use exactly these keys:
+Once you have reached your verdict, you should have all three values needed to call write_result:
 "verdict"    : "CLONE" if functionally identical, "NOT_CLONE" otherwise
 "confidence" : a float between 0.0 and 1.0 representing how certain you are of your verdict based on the evidence
 "reasoning"  : max 100 words citing the specific behavioral evidence that determined your verdict
 
-Example output shape:
-{{"verdict": "CLONE", "confidence": 0.92, "reasoning": "Both iterate and aggregate the same way."}}
+Pass these values directly as arguments to the write_result tool.

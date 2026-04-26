@@ -14,9 +14,9 @@ Use this skill after you have completed your analysis and formed a final verdict
 
 ## Calling write_result
 Call `write_result` with exactly these arguments:
-- `predicted_label` : your verdict string (CLONE or NOT_CLONE)
-- `confidence`      : your confidence score (0.0 to 1.0)
-- `reasoning`       : your evidence summary 
+"verdict"    : your verdict string (CLONE or NOT_CLONE)
+"confidence" : your confidence score (0.0 to 1.0)
+"reasoning"  : your evidence summary (max 100 words)
 
 The tool automatically binds the pair_id, dataset, and timing - do not pass these yourself.
 
