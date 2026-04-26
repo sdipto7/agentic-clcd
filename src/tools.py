@@ -142,13 +142,13 @@ def compare_and_decide(content_a: str, content_b: str, comparison_type: str) -> 
 
 
 @tool
-def write_result(predicted_label: str, confidence: float, reasoning: str) -> str:
+def write_result(verdict: str, confidence: float, reasoning: str) -> str:
     """
     Record the final clone detection verdict for the current pair. Call this exactly once after you have completed your analysis
     and formed a final judgment. Do not call this more than once per pair - duplicate calls will be rejected.
 
     Args:
-        predicted_label: your verdict - must be exactly CLONE or NOT_CLONE.
+        verdict: must be exactly CLONE or NOT_CLONE.
         confidence: how confident you are in the verdict, between 0.0 and 1.0.
         reasoning: brief explanation of your decision in max 100 words.
     Returns:
@@ -162,11 +162,11 @@ def write_result(predicted_label: str, confidence: float, reasoning: str) -> str
     if _context_pair_id is None or _context_dataset is None or _context_ground_truth is None:
         return "Internal error: pair context missing for write_result."
 
-    pred = predicted_label.strip().upper()
-    if pred in ("NOT CLONE", "NON_CLONE"):
-        pred = "NOT_CLONE"
-    if pred not in ("CLONE", "NOT_CLONE"):
-        return f"Invalid predicted_label {predicted_label!r}; use CLONE or NOT_CLONE."
+    verdict = verdict.strip().upper()
+    if verdict in ("NOT CLONE", "NON_CLONE"):
+        verdict = "NOT_CLONE"
+    if verdict not in ("CLONE", "NOT_CLONE"):
+        return f"Invalid verdict {verdict!r}; use CLONE or NOT_CLONE."
 
     try:
         conf = float(confidence)
@@ -182,23 +182,23 @@ def write_result(predicted_label: str, confidence: float, reasoning: str) -> str
         pair_id=_context_pair_id,
         dataset=_context_dataset,
         ground_truth=_context_ground_truth,
-        predicted_label=pred,
+        predicted_label=verdict,
         confidence=conf,
         reasoning=reasoning,
         processing_time_seconds=elapsed,
     )
     _write_result_called = True
-    _last_predicted_label = pred
+    _last_predicted_label = verdict
     logger.info(
         "write_result tool: pair_id=%s ground_truth=%s predicted=%s conf=%.3f time=%.3fs",
         _context_pair_id,
         _context_ground_truth,
-        pred,
+        verdict,
         conf,
         elapsed,
     )
 
-    return f"Recorded result for {_context_pair_id}: {pred} (confidence {conf:.3f})."
+    return f"Recorded result for {_context_pair_id}: {verdict} (confidence {conf:.3f})."
 
 
 def get_agent_tools() -> list[Any]:
