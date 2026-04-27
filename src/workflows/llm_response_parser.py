@@ -21,11 +21,14 @@ def _strip_code_fence(text: str) -> str:
     stripped = text.strip()
     if stripped.startswith("```"):
         lines = stripped.split("\n")
+
         if lines[0].startswith("```"):
             lines = lines[1:]
+
         if lines and lines[-1].strip() == "```":
             lines = lines[:-1]
         stripped = "\n".join(lines).strip()
+
     return stripped
 
 
@@ -54,8 +57,10 @@ def parse_detection_json(raw_text: str) -> Optional[dict[str, Any]]:
 
     if not isinstance(data, dict):
         return None
+
     if "verdict" not in data:
         return None
+
     return data
 
 
@@ -71,11 +76,14 @@ def normalize_verdict_str(value: Any) -> Optional[str]:
     """
     if value is None:
         return None
+
     s = str(value).strip().upper()
     if s in ("CLONE", "1", "TRUE", "YES"):
         return CLONE
+
     if s in ("NOT_CLONE", "NOT CLONE", "NON_CLONE", "NONCLONE", "0", "FALSE", "NO"):
         return NOT_CLONE
+
     return None
 
 
@@ -93,14 +101,17 @@ def extract_verdict_from_text(raw_text: str) -> Optional[str]:
     # Prefer explicit NOT_CLONE tokens first to avoid substring issues
     if "NOT_CLONE" in upper or "NOT CLONE" in upper or "NON_CLONE" in upper:
         return NOT_CLONE
+
     if re.search(r"\bCLONE\b", upper) and "NOT" not in upper.split("CLONE")[0][-10:]:
         return CLONE
+
     if "CLONE" in upper:
         return CLONE
+
     return None
 
 
-def interpret_detection_response(
+def interpret_llm_response(
     raw_text: str,
 ) -> Tuple[str, float, str]:
     """
@@ -115,15 +126,19 @@ def interpret_detection_response(
         Tuple of (verdict, confidence, reasoning). Verdict may be ERROR if empty.
     """
     parsed = parse_detection_json(raw_text)
+
     if parsed is not None:
         verdict = normalize_verdict_str(parsed.get("verdict"))
-        conf_raw = parsed.get("confidence", 0.5)
+        confidence_raw = parsed.get("confidence", 0.5)
+
         try:
-            confidence = float(conf_raw)
+            confidence = float(confidence_raw)
         except (TypeError, ValueError):
             confidence = 0.5
         confidence = max(0.0, min(1.0, confidence))
+
         reasoning = str(parsed.get("reasoning", "")).strip()
+        
         if verdict is None:
             logger.warning(
                 "Parsed JSON but verdict missing or invalid; using fallback. Raw: %s",
@@ -131,10 +146,13 @@ def interpret_detection_response(
             )
             verdict = extract_verdict_from_text(raw_text) or ERROR
             confidence = 0.5
+
         return verdict, confidence, reasoning
 
     logger.warning("JSON parse failed; using text fallback. Raw: %s", raw_text[:500])
+    
     verdict = extract_verdict_from_text(raw_text)
     if verdict is None:
         return ERROR, 0.5, ""
+    
     return verdict, 0.5, "(recovered from non-JSON output)"

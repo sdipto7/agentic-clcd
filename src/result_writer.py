@@ -33,10 +33,10 @@ class ResultWriter:
         self.csv_path = csv_path
         self.pipeline = pipeline
         self.model_alias = model_alias
-        self._tp = 0
-        self._tn = 0
-        self._fp = 0
-        self._fn = 0
+        self._true_positive = 0
+        self._true_negative = 0
+        self._false_positive = 0
+        self._false_negative = 0
         self._total = 0
         self._correct = 0
 
@@ -61,25 +61,26 @@ class ResultWriter:
         if predicted == expected:
             self._correct += 1
 
-        pos_pred = predicted == CLONE
-        pos_truth = ground_truth == 1
+        is_predicted_clone = predicted == CLONE
+        is_ground_truth_positive = ground_truth == 1
 
         if predicted == ERROR:
             # Treat unresolved output as harming both precision and recall buckets.
-            if pos_truth:
-                self._fn += 1
+            if is_ground_truth_positive:
+                self._false_negative += 1
             else:
-                self._fp += 1
+                self._false_positive += 1
             return
 
-        if pos_truth and pos_pred:
-            self._tp += 1
-        elif pos_truth and not pos_pred:
-            self._fn += 1
-        elif not pos_truth and pos_pred:
-            self._fp += 1
+        if is_ground_truth_positive and is_predicted_clone:
+            self._true_positive += 1
+        elif is_ground_truth_positive and not is_predicted_clone:
+            self._false_negative += 1
+        elif not is_ground_truth_positive and is_predicted_clone:
+            self._false_positive += 1
         else:
-            self._tn += 1
+            self._true_negative += 1
+
 
     def record_result(
         self,
@@ -118,12 +119,15 @@ class ResultWriter:
         write_header = not self._file_exists
         with open(self.csv_path, "a", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=self._fieldnames)
+
             if write_header:
                 writer.writeheader()
                 self._file_exists = True
+
             writer.writerow(row)
 
         self._update_counts(ground_truth, predicted_label)
+
 
     def get_summary(self) -> dict[str, Any]:
         """
@@ -132,23 +136,24 @@ class ResultWriter:
         Returns:
             Dict with total, correct, tp, tn, fp, fn, accuracy, precision, recall, f1.
         """
-        total = self._total
-        accuracy = self._correct / total if total else 0.0
-        tp, fp, fn = self._tp, self._fp, self._fn
-        prec_denom = tp + fp
-        rec_denom = tp + fn
-        precision = tp / prec_denom if prec_denom else 0.0
-        recall = tp / rec_denom if rec_denom else 0.0
-        f1_denom = precision + recall
-        f1 = (2 * precision * recall / f1_denom) if f1_denom else 0.0
+        accuracy = self._correct / self._total if self._total else 0.0
+
+        precision_denominator = self._true_positive + self._false_positive
+        precision = self._true_positive / precision_denominator if precision_denominator else 0.0
+
+        recall_denominator = self._true_positive + self._false_negative
+        recall = self._true_positive / recall_denominator if recall_denominator else 0.0
+ 
+        f1_denominator = precision + recall
+        f1 = (2 * precision * recall / f1_denominator) if f1_denominator else 0.0
 
         return {
-            "total": total,
+            "total": self._total,
             "correct": self._correct,
-            "tp": tp,
-            "tn": self._tn,
-            "fp": fp,
-            "fn": fn,
+            "tp": self._true_positive,
+            "tn": self._true_negative,
+            "fp": self._false_positive,
+            "fn": self._false_negative,
             "accuracy": accuracy,
             "precision": precision,
             "recall": recall,

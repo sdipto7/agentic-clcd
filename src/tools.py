@@ -44,9 +44,9 @@ def set_active_result_writer(
         dataset: Dataset name for the active pair.
         ground_truth: 1 clone, 0 non-clone.
     """
-    global _active_writer, _context_pair_id, _context_dataset
-    global _context_ground_truth, _pair_start_time, _write_result_called
-    global _last_predicted_label
+    global _active_writer, _context_pair_id, _context_dataset, _context_ground_truth
+    global _pair_start_time, _write_result_called, _last_predicted_label
+
     _active_writer = writer
     _context_pair_id = pair_id
     _context_dataset = dataset
@@ -125,15 +125,15 @@ def compare_and_decide(content_a: str, content_b: str, comparison_type: str) -> 
     Returns:
         A formatted string showing both fragments labeled and side by side.
     """
-    ct = comparison_type.strip()
-    if ct not in (COMPARE_TYPE_SOURCE_CODE, COMPARE_TYPE_ALGORITHM):
+    comparison_type = comparison_type.strip()
+    if comparison_type not in (COMPARE_TYPE_SOURCE_CODE, COMPARE_TYPE_ALGORITHM):
         return (
             f"Invalid comparison_type {comparison_type!r}. "
             f'Use "{COMPARE_TYPE_SOURCE_CODE}" or "{COMPARE_TYPE_ALGORITHM}".'
         )
 
-    label_left = "Java" if ct == COMPARE_TYPE_SOURCE_CODE else "Algorithm A (Java side)"
-    label_right = "Python" if ct == COMPARE_TYPE_SOURCE_CODE else "Algorithm B (Python side)"
+    label_left = "Java" if comparison_type == COMPARE_TYPE_SOURCE_CODE else "Algorithm A (Java side)"
+    label_right = "Python" if comparison_type == COMPARE_TYPE_SOURCE_CODE else "Algorithm B (Python side)"
 
     return (
         f"=== {label_left} ===\n{content_a.strip()}\n\n"
@@ -155,24 +155,28 @@ def write_result(verdict: str, confidence: float, reasoning: str) -> str:
         Confirmation message if recorded successfully, or an error description.
     """
     global _write_result_called, _last_predicted_label
+
     if _write_result_called:
         return "A result was already recorded for this pair; do not call write_result again."
+
     if _active_writer is None:
         return "No active result writer configured; cannot record."
+
     if _context_pair_id is None or _context_dataset is None or _context_ground_truth is None:
         return "Internal error: pair context missing for write_result."
 
     verdict = verdict.strip().upper()
     if verdict in ("NOT CLONE", "NON_CLONE"):
         verdict = "NOT_CLONE"
+
     if verdict not in ("CLONE", "NOT_CLONE"):
         return f"Invalid verdict {verdict!r}; use CLONE or NOT_CLONE."
 
     try:
-        conf = float(confidence)
+        confidence = float(confidence)
     except (TypeError, ValueError):
-        conf = 0.5
-    conf = max(0.0, min(1.0, conf))
+        confidence = 0.5
+    confidence = max(0.0, min(1.0, confidence))
 
     elapsed = 0.0
     if _pair_start_time is not None:
@@ -183,22 +187,23 @@ def write_result(verdict: str, confidence: float, reasoning: str) -> str:
         dataset=_context_dataset,
         ground_truth=_context_ground_truth,
         predicted_label=verdict,
-        confidence=conf,
+        confidence=confidence,
         reasoning=reasoning,
         processing_time_seconds=elapsed,
     )
     _write_result_called = True
     _last_predicted_label = verdict
+
     logger.info(
         "write_result tool: pair_id=%s ground_truth=%s predicted=%s conf=%.3f time=%.3fs",
         _context_pair_id,
         _context_ground_truth,
         verdict,
-        conf,
+        confidence,
         elapsed,
     )
 
-    return f"Recorded result for {_context_pair_id}: {verdict} (confidence {conf:.3f})."
+    return f"Recorded result for {_context_pair_id}: {verdict} (confidence {confidence:.3f})."
 
 
 def get_agent_tools() -> list[Any]:
