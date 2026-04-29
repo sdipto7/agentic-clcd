@@ -4,6 +4,8 @@ Pipeline 3: ReAct agent with autonomous skill loading and tool use.
 
 from __future__ import annotations
 
+import os
+import json
 import time
 from typing import Any, List
 
@@ -15,6 +17,7 @@ from src.constants import (
     LABEL_TO_VERDICT,
     NOT_CLONE,
     PIPELINE_AGENTIC,
+    OUTPUT_DIR_BY_PIPELINE,
 )
 from src.logger import get_logger
 from src.result_writer import ResultWriter
@@ -22,10 +25,41 @@ from src.tools import (
     get_last_predicted_label,
     set_active_result_writer,
     was_write_result_called,
+    clear_recorded_algorithms,
+    get_recorded_algorithms,
 )
 from src.workflows.llm_helpers import pace_api_call
 
 logger = get_logger(__name__)
+
+
+def _save_algorithm_sidecar(
+    model_alias: str,
+    dataset_name: str,
+    algorithms_by_pair: dict[str, dict[str, str]],
+) -> None:
+    """
+    Write extracted algorithms for all pairs to a single JSON file.
+
+    The output is written under the agentic output directory as
+    ``algorithms_<model_alias>_<dataset_name>.json``.
+
+    Args:
+        model_alias: Model alias for the current run (used in filename).
+        dataset_name: Dataset name for the current run (used in filename).
+        algorithms_by_pair: Mapping of pair_id -> {"java_algorithm": ..., "python_algorithm": ...}.
+
+    Returns:
+        None.
+    """
+    out_dir = OUTPUT_DIR_BY_PIPELINE[PIPELINE_AGENTIC]
+    os.makedirs(out_dir, exist_ok=True)
+
+    json_name = f"algorithms_{model_alias}_{dataset_name}.json"
+    json_path = os.path.join(out_dir, json_name)
+
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(algorithms_by_pair, f, ensure_ascii=False, indent=2)
 
 
 def _goal_message(rec: dict[str, Any]) -> str:
@@ -113,5 +147,17 @@ def run_agentic_workflow(
         set_active_result_writer(None)
 
         pace_api_call()
+
+    # Save algorithms for the pairs for which the agent used the algo_based approach
+    algorithms_by_pair = get_recorded_algorithms()
+    if algorithms_by_pair:
+        dataset_name = records[0]["dataset"] if records else "unknown_dataset"
+        _save_algorithm_sidecar(model_alias, dataset_name, algorithms_by_pair)
+
+        logger.info(
+            "Agentic algorithms saved: %d/%d pairs used algo-based path.",
+            len(algorithms_by_pair),
+            len(records),
+        )
 
     return writer.get_summary()

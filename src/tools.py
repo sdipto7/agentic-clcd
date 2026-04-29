@@ -27,6 +27,12 @@ _context_ground_truth: Optional[int] = None
 _pair_start_time: Optional[float] = None
 _write_result_called: bool = False
 _last_predicted_label: Optional[str] = None
+_algorithms_by_pair: dict[str, dict[str, str]] = {}
+
+
+def get_recorded_algorithms() -> dict[str, dict[str, str]]:
+    """Return all recorded algorithms collected during the run."""
+    return _algorithms_by_pair
 
 
 def set_active_result_writer(
@@ -119,8 +125,8 @@ def compare_and_decide(content_a: str, content_b: str, comparison_type: str) -> 
     Call this when you need to analyze two pieces of content together before making a clone detection decision.
 
     Args:
-        content_a: first fragment — Java source code or Algorithm A.
-        content_b: second fragment — Python source code or Algorithm B.
+        content_a: first fragment - Java source code or Algorithm A.
+        content_b: second fragment - Python source code or Algorithm B.
         comparison_type: "source_code" when comparing raw code, "algorithm" when comparing extracted pseudocode.
     Returns:
         A formatted string showing both fragments labeled and side by side.
@@ -206,6 +212,45 @@ def write_result(verdict: str, confidence: float, reasoning: str) -> str:
     return f"Recorded result for {_context_pair_id}: {verdict} (confidence {confidence:.3f})."
 
 
+@tool
+def record_algorithms(java_algorithm: str, python_algorithm: str) -> str:
+    """
+    Save the extracted pseudocode algorithms for the current pair.
+    Call this exactly once per pair, and only after algorithms from
+    BOTH the Java and Python code fragment is fully extracted. Do not
+    call this if only one algorithm has been extracted - wait until both
+    are ready. Only call this when using the algorithm-based detection path.
+    Do not call this on direct detection runs.
+
+    Args:
+        java_algorithm: pseudocode extracted from the Java fragment.
+        python_algorithm: pseudocode extracted from the Python fragment.
+    Returns:
+        Confirmation message if saved successfully.
+    """
+    if _context_pair_id is None:
+        return "No active pair context; cannot record algorithms."
+
+    if _context_pair_id in _algorithms_by_pair:
+        return (
+            f"Algorithms already recorded for {_context_pair_id}. "
+            "Do not call record_algorithms more than once per pair."
+        )
+
+    if not java_algorithm.strip() or not python_algorithm.strip():
+        return (
+            "Both java_algorithm and python_algorithm must be non-empty. "
+            "Extract algorithms from both fragments before calling this tool."
+        )
+
+    _algorithms_by_pair[_context_pair_id] = {
+        "java_algorithm": java_algorithm.strip(),
+        "python_algorithm": python_algorithm.strip(),
+    }
+
+    return f"Recorded algorithms for {_context_pair_id}."
+
+
 def get_agent_tools() -> list[Any]:
     """Return all BaseTool instances used by Pipeline 3."""
-    return [list_skills, load_skill, compare_and_decide, write_result]
+    return [list_skills, load_skill, compare_and_decide, write_result, record_algorithms]
