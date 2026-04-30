@@ -25,7 +25,6 @@ from src.tools import (
     get_last_predicted_label,
     set_active_result_writer,
     was_write_result_called,
-    clear_recorded_algorithms,
     get_recorded_algorithms,
 )
 from src.workflows.llm_helpers import pace_api_call
