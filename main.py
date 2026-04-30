@@ -9,6 +9,8 @@ import argparse
 import os
 import sys
 from typing import Any, Callable, Dict, List
+import time
+from langchain_community.callbacks import get_openai_callback
 
 _PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 if _PROJECT_ROOT not in sys.path:
@@ -31,6 +33,7 @@ from src.result_writer import ResultWriter  # noqa: E402
 from src.workflows.agentic_workflow import run_agentic_workflow  # noqa: E402
 from src.workflows.algo_based_workflow import run_algo_based_workflow  # noqa: E402
 from src.workflows.direct_workflow import run_direct_workflow  # noqa: E402
+from src.token_usage_writer import save_token_usage_data  # noqa: E402
 
 logger = get_logger(__name__)
 
@@ -101,8 +104,10 @@ def main() -> None:
     dataset_name = args.dataset
 
     _print_table_header()
+
     runner = WORKFLOW_REGISTRY[pipeline]
     llm = create_chat_model(model_alias)
+
     loader = DatasetLoader(dataset_name)
     try:
         records = loader.load()
@@ -113,6 +118,7 @@ def main() -> None:
 
     csv_path = _results_csv_path(pipeline, model_alias, dataset_name)
     writer = ResultWriter(csv_path, pipeline=pipeline, model_alias=model_alias)
+
     logger.info(
         "Starting run pipeline=%s model=%s dataset=%s pairs=%s",
         pipeline,
@@ -120,7 +126,28 @@ def main() -> None:
         dataset_name,
         len(records),
     )
-    summary = runner(llm, records, writer, model_alias)
+
+    t0 = time.perf_counter()
+    with get_openai_callback() as cb:
+        summary = runner(llm, records, writer, model_alias)
+    elapsed_seconds = time.perf_counter() - t0
+
+    save_token_usage_data(
+        pipeline=pipeline,
+        model_alias=model_alias,
+        dataset=dataset_name,
+        pairs=len(records),
+        elapsed_seconds=elapsed_seconds,
+        token_usage={
+            "prompt_tokens": cb.prompt_tokens,
+            "completion_tokens": cb.completion_tokens,
+            "total_tokens": cb.total_tokens,
+            "successful_requests": cb.successful_requests,
+            "total_cost": cb.total_cost,
+        },
+        metrics=summary,
+    )
+
     _print_run_row(pipeline, model_alias, dataset_name, summary)
 
 
