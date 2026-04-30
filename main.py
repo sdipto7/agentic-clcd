@@ -19,13 +19,12 @@ if _PROJECT_ROOT not in sys.path:
 from src.constants import (  # noqa: E402
     DATASET_CHOICES,
     MODEL_CHOICES,
-    OUTPUT_DIR_BY_PIPELINE,
     PIPELINE_AGENTIC,
     PIPELINE_ALGO_BASED,
     PIPELINE_CHOICES,
     PIPELINE_DIRECT,
-    RESULTS_CSV_PREFIX,
 )
+from src.result_helper import results_csv_path, prepare_records_to_run  # noqa: E402
 from src.dataset_loader import DatasetLoader  # noqa: E402
 from src.llm import create_chat_model  # noqa: E402
 from src.logger import get_logger, setup_logging  # noqa: E402
@@ -34,6 +33,7 @@ from src.workflows.agentic_workflow import run_agentic_workflow  # noqa: E402
 from src.workflows.algo_based_workflow import run_algo_based_workflow  # noqa: E402
 from src.workflows.direct_workflow import run_direct_workflow  # noqa: E402
 from src.token_usage_writer import save_token_usage_data  # noqa: E402
+
 
 logger = get_logger(__name__)
 
@@ -44,13 +44,6 @@ WORKFLOW_REGISTRY: Dict[str, WorkflowFn] = {
     PIPELINE_ALGO_BASED: run_algo_based_workflow,
     PIPELINE_AGENTIC: run_agentic_workflow,
 }
-
-
-def _results_csv_path(pipeline: str, model_alias: str, dataset: str) -> str:
-    """Build the CSV path for one experimental run."""
-    out_dir = OUTPUT_DIR_BY_PIPELINE[pipeline]
-    fname = f"{RESULTS_CSV_PREFIX}_{model_alias}_{dataset}.csv"
-    return os.path.join(out_dir, fname)
 
 
 def _print_run_row(
@@ -116,7 +109,13 @@ def main() -> None:
         print(str(exc))
         return
 
-    csv_path = _results_csv_path(pipeline, model_alias, dataset_name)
+    csv_path = results_csv_path(pipeline, model_alias, dataset_name)
+
+    records_to_run = prepare_records_to_run(records, csv_path)
+    if not records_to_run:
+        print("Nothing to do: all pairs already processed successfully.")
+        return
+
     writer = ResultWriter(csv_path, pipeline=pipeline, model_alias=model_alias)
 
     logger.info(
@@ -124,19 +123,19 @@ def main() -> None:
         pipeline,
         model_alias,
         dataset_name,
-        len(records),
+        len(records_to_run),
     )
 
     t0 = time.perf_counter()
     with get_openai_callback() as cb:
-        summary = runner(llm, records, writer, model_alias)
+        summary = runner(llm, records_to_run, writer, model_alias)
     elapsed_seconds = time.perf_counter() - t0
 
     save_token_usage_data(
         pipeline=pipeline,
         model_alias=model_alias,
         dataset=dataset_name,
-        pairs=len(records),
+        pairs=len(records_to_run),
         elapsed_seconds=elapsed_seconds,
         token_usage={
             "prompt_tokens": cb.prompt_tokens,
