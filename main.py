@@ -96,14 +96,13 @@ def main() -> None:
         records = loader.load()
     except FileNotFoundError as exc:
         logger.error("%s", exc)
-        print(str(exc))
         return
 
     csv_path = results_csv_path(pipeline, model_alias, dataset_name)
 
     records_to_run = prepare_records_to_run(records, csv_path)
     if not records_to_run:
-        print("Nothing to do: all pairs already processed successfully.")
+        logger.info("All pairs are already processed successfully.")
         return
 
     writer = ResultWriter(csv_path, pipeline=pipeline, model_alias=model_alias)

@@ -15,7 +15,7 @@ def setup_logging(level: int = logging.INFO) -> logging.Logger:
     """
     Configure root logging once: timestamp | level | module | message.
 
-    Creates the logs directory if missing. Subsequent calls are no-ops.
+    Writes logs to a single file under logs/. No console handler is attached.
 
     Args:
         level: Minimum log level for handlers.
@@ -33,19 +33,15 @@ def setup_logging(level: int = logging.INFO) -> logging.Logger:
     fmt = logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s")
     root.setLevel(level)
 
-    console = logging.StreamHandler()
-    console.setLevel(level)
-    console.setFormatter(fmt)
-
     file_handler = logging.FileHandler(LOG_FILE_PATH, encoding="utf-8")
     file_handler.setLevel(level)
     file_handler.setFormatter(fmt)
 
     root.handlers.clear()
-    root.addHandler(console)
     root.addHandler(file_handler)
 
     _CONFIGURED = True
+
     return root
 
 
@@ -60,4 +56,5 @@ def get_logger(name: str) -> logging.Logger:
         Configured Logger instance.
     """
     setup_logging()
+
     return logging.getLogger(name)
