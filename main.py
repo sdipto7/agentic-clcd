@@ -46,28 +46,6 @@ WORKFLOW_REGISTRY: Dict[str, WorkflowFn] = {
 }
 
 
-def _print_run_row(
-    pipeline: str,
-    model_alias: str,
-    dataset: str,
-    summary: dict[str, Any],
-) -> None:
-    """Emit one formatted summary line after a run completes."""
-    print(
-        f"{pipeline:12} | {model_alias:14} | {dataset:8} | "
-        f"acc={summary['accuracy']:.4f} | prec={summary['precision']:.4f} | "
-        f"rec={summary['recall']:.4f} | f1={summary['f1']:.4f} | n={summary['total']}"
-    )
-
-
-def _print_table_header() -> None:
-    print(
-        f"{'pipeline':12} | {'model':14} | {'dataset':8} | "
-        f"acc      | prec     | rec      | f1       | n"
-    )
-    print("-" * 92)
-
-
 def main() -> None:
     """
     Command-line entry point for running one experiment.
@@ -109,8 +87,6 @@ def main() -> None:
     pipeline = args.pipeline
     model_alias = args.model
     dataset_name = args.dataset
-
-    _print_table_header()
 
     runner = WORKFLOW_REGISTRY[pipeline]
     llm = create_chat_model(model_alias)
@@ -175,8 +151,6 @@ def main() -> None:
                 },
                 metrics=summary,
             )
-
-    _print_run_row(pipeline, model_alias, dataset_name, summary)
 
 
 
