@@ -16,6 +16,7 @@ def save_token_usage_data(
     elapsed_seconds: float,
     token_usage: Dict[str, Any],
     metrics: Dict[str, Any],
+    run_status: str = "success",
 ) -> None:
     """
     Append one run-level token-usage row to a CSV file.
@@ -33,6 +34,7 @@ def save_token_usage_data(
             successful_requests, prompt_tokens, completion_tokens, total_tokens, total_cost.
         metrics: Run summary metrics (missing keys default to 0.0):
             accuracy, precision, recall, f1.
+        run_status: Status of the run (e.g., "success", "failed").
     Returns:
         None.
     """
@@ -47,6 +49,7 @@ def save_token_usage_data(
         "dataset",
         "pairs",
         "elapsed_seconds",
+        "run_status",
         "successful_requests",
         "prompt_tokens",
         "completion_tokens",
@@ -65,6 +68,7 @@ def save_token_usage_data(
         "dataset": dataset,
         "pairs": pairs,
         "elapsed_seconds": f"{elapsed_seconds:.6f}",
+        "run_status": run_status,
         "successful_requests": int(token_usage.get("successful_requests", 0) or 0),
         "prompt_tokens": int(token_usage.get("prompt_tokens", 0) or 0),
         "completion_tokens": int(token_usage.get("completion_tokens", 0) or 0),

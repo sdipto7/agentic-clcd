@@ -127,25 +127,40 @@ def main() -> None:
     )
 
     t0 = time.perf_counter()
-    with get_openai_callback() as cb:
-        summary = runner(llm, records_to_run, writer, model_alias)
-    elapsed_seconds = time.perf_counter() - t0
+    summary: dict[str, Any] | None = None
+    run_status = "success"
 
-    save_token_usage_data(
-        pipeline=pipeline,
-        model_alias=model_alias,
-        dataset=dataset_name,
-        pairs=len(records_to_run),
-        elapsed_seconds=elapsed_seconds,
-        token_usage={
-            "prompt_tokens": cb.prompt_tokens,
-            "completion_tokens": cb.completion_tokens,
-            "total_tokens": cb.total_tokens,
-            "successful_requests": cb.successful_requests,
-            "total_cost": cb.total_cost,
-        },
-        metrics=summary,
-    )
+    with get_openai_callback() as cb:
+        try:
+            summary = runner(llm, records_to_run, writer, model_alias)
+        except KeyboardInterrupt:
+            run_status = "interrupted"
+            raise
+        except Exception:
+            run_status = "crashed"
+            logger.exception("Run crashed")
+            raise
+        finally:
+            elapsed_seconds = time.perf_counter() - t0
+            if summary is None:
+                summary = writer.get_summary()
+
+            save_token_usage_data(
+                pipeline=pipeline,
+                model_alias=model_alias,
+                dataset=dataset_name,
+                pairs=len(records_to_run),
+                elapsed_seconds=elapsed_seconds,
+                run_status=run_status,
+                token_usage={
+                    "prompt_tokens": cb.prompt_tokens,
+                    "completion_tokens": cb.completion_tokens,
+                    "total_tokens": cb.total_tokens,
+                    "successful_requests": cb.successful_requests,
+                    "total_cost": cb.total_cost,
+                },
+                metrics=summary,
+            )
 
     _print_run_row(pipeline, model_alias, dataset_name, summary)
 
