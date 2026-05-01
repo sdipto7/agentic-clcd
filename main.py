@@ -69,8 +69,22 @@ def _print_table_header() -> None:
 
 
 def main() -> None:
-    """Parse CLI flags and execute one explicit experiment run."""
+    """
+    Command-line entry point for running one experiment.
+
+    Required CLI arguments:
+    - pipeline: direct, algo_based, agentic
+    - model: one of the available model aliases (see MODEL_CHOICES in src/constants.py)
+    - dataset: xlcost, codenet
+
+    Example:
+        python main.py --pipeline direct --model deepseek_v3 --dataset xlcost
+
+    Returns:
+        None.
+    """
     setup_logging()
+
     parser = argparse.ArgumentParser(description="Cross-language clone detection experiments.")
     parser.add_argument(
         "--pipeline",
