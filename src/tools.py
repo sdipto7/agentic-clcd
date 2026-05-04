@@ -95,7 +95,8 @@ def list_skills() -> str:
 def load_skill(skill_name: str) -> str:
     """
     Retrieve the full instructions for a skill by name.
-    Call this before performing any task that a skill covers - never assume skill content without loading it first.
+    Call this before performing any task that a skill covers and
+    never assume skill content without loading it first.
     Use list_skills first if you are unsure of the exact skill name.
 
     Args:
@@ -122,12 +123,14 @@ def load_skill(skill_name: str) -> str:
 def compare_and_decide(content_a: str, content_b: str, comparison_type: str) -> str:
     """
     Display two code fragments or algorithms side by side for comparison.
-    Call this when you need to analyze two pieces of content together before making a clone detection decision.
+    Call this when you need to analyze two pieces of content together
+    before making a clone detection decision.
 
     Args:
         content_a: first fragment - Java source code or Algorithm A.
         content_b: second fragment - Python source code or Algorithm B.
-        comparison_type: "source_code" when comparing raw code, "algorithm" when comparing extracted pseudocode.
+        comparison_type: "source_code" when comparing raw code,
+                         "algorithm" when comparing extracted pseudocode.
     Returns:
         A formatted string showing both fragments labeled and side by side.
     """
@@ -150,13 +153,15 @@ def compare_and_decide(content_a: str, content_b: str, comparison_type: str) -> 
 @tool
 def write_result(verdict: str, confidence: float, reasoning: str) -> str:
     """
-    Record the final clone detection verdict for the current pair. Call this exactly once after you have completed your analysis
-    and formed a final judgment. Do not call this more than once per pair - duplicate calls will be rejected.
+    Record the final clone detection verdict for the current pair.
+    Call this exactly once after you have completed your analysis
+    and formed a final judgment. Do not call this more than once
+    per pair. Duplicate calls will be rejected.
 
     Args:
-        verdict: must be exactly CLONE or NOT_CLONE.
-        confidence: how confident you are in the verdict, between 0.0 and 1.0.
-        reasoning: brief explanation of your decision in max 100 words.
+        verdict: exactly CLONE or NOT_CLONE.
+        confidence: float between 0.0 and 1.0.
+        reasoning: max 100 words explaining your decision.
     Returns:
         Confirmation message if recorded successfully, or an error description.
     """
@@ -216,17 +221,15 @@ def write_result(verdict: str, confidence: float, reasoning: str) -> str:
 def record_algorithms(java_algorithm: str, python_algorithm: str) -> str:
     """
     Save the extracted pseudocode algorithms for the current pair.
-    Call this exactly once per pair, and only after algorithms from
-    BOTH the Java and Python code fragment is fully extracted. Do not
-    call this if only one algorithm has been extracted - wait until both
-    are ready. Only call this when using the algorithm-based detection path.
-    Do not call this on direct detection runs.
+    Call this exactly once per pair, and only after you have fully
+    extracted algorithms from BOTH the Java and Python fragments.
+    Only call this on algorithm-based detection runs.
 
     Args:
-        java_algorithm: pseudocode extracted from the Java fragment.
-        python_algorithm: pseudocode extracted from the Python fragment.
+        java_algorithm: complete pseudocode extracted from the Java fragment.
+        python_algorithm: complete pseudocode extracted from the Python fragment.
     Returns:
-        Confirmation message if saved successfully.
+        Confirmation message if saved successfully, or an error if no active pair.
     """
     if _context_pair_id is None:
         return "No active pair context; cannot record algorithms."

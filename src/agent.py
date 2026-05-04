@@ -77,7 +77,7 @@ def get_react_prompt_template() -> str:
         "Question: the input task you must solve\n"
         "Thought: plan your next step\n"
         "Action: the action to take, must be one of [{tool_names}]\n"
-        "Action Input: valid JSON inputs for that tool\n"
+        "Action Input: the parameter names and values for the chosen tool. Pass each parameter directly by name.\n"
         "Observation: tool output\n"
         "... repeat Thought/Action/Action Input/Observation as needed ...\n"
         "Thought: I have completed detection and recorded the result.\n"
