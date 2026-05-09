@@ -24,12 +24,10 @@ You are comparing two pseudocode algorithms - Algorithm A extracted from Java an
 This comparison is purely logical. Do not reintroduce any language-specific reasoning - the pseudocode has already eliminated syntax and naming differences. Judge computational logic only.
 
 ## Output
-Once you have reached your verdict, you should have all three values needed to call write_result:
+After you have reached a conclusion, you should have all three values needed to call `write_result`:
 
 **"verdict"**    : "CLONE" if functionally identical, "NOT_CLONE" otherwise
 
 **"confidence"** : a float between 0.0 and 1.0 representing how certain you are of your verdict based on the evidence
 
 **"reasoning"**  : max 100 words citing the specific behavioral evidence that determined your verdict
-
-Pass these values directly as arguments to the write_result tool.

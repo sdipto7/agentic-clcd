@@ -5,6 +5,7 @@ LangChain tools for the Pipeline 3 ReAct agent: skills, comparison helper, resul
 from __future__ import annotations
 
 import time
+import json
 from typing import Any, Optional
 
 from langchain_core.tools import tool
@@ -72,11 +73,42 @@ def get_last_predicted_label() -> Optional[str]:
     return _last_predicted_label
 
 
+def _parse_json_input(data: str) -> dict:
+    """
+    Extract the first JSON object (dict) from a string.
+
+    Handles inputs like pure JSON, JSON with trailing text, or prefix + JSON + suffix
+    by scanning for '{' and using ``json.JSONDecoder().raw_decode`` from that point.
+
+    Args:
+        data: Raw tool input string.
+
+    Returns:
+        Parsed dict if found; otherwise {}.
+    """
+    cleaned = data.strip()
+    for idx, ch in enumerate(cleaned):
+        if ch != "{":
+            continue
+
+        try:
+            decoder = json.JSONDecoder()
+            parsed, _ = decoder.raw_decode(cleaned[idx:])
+        except json.JSONDecodeError:
+            continue
+
+        if isinstance(parsed, dict):
+            return parsed
+
+    return {}
+
+
 @tool
 def list_skills() -> str:
     """
     Return all available skills with their names and descriptions.
-    Call this when you are unsure what skills exist or want to decide which skill is relevant for your current task.
+    Call this when you are unsure what skills exist or want to
+    decide which skill is relevant for your current task.
 
     Returns:
         A formatted list of skill names and their descriptions.
@@ -84,30 +116,42 @@ def list_skills() -> str:
     if not SKILL_REGISTRY:
         return "No skills were discovered on disk."
 
-    lines = ["Available skills (call load_skill with the name):"]
+    lines = ["=== SKILLS (load with load_skill) ==="]
     for info in sorted(SKILL_REGISTRY.values(), key=lambda x: x["name"]):
-        lines.append(f"- {info['name']}: {info['description']}")
+        lines.append(f"SKILL: {info['name']}")
+        lines.append(f"  USE WHEN: {info['description']}")
+        lines.append("")
 
     return "\n".join(lines)
 
 
 @tool
-def load_skill(skill_name: str) -> str:
+def load_skill(data: str) -> str:
     """
     Retrieve the full instructions for a skill by name.
-    Call this before performing any task that a skill covers and
-    never assume skill content without loading it first.
+    Call this before performing any task that a skill covers.
+    Never assume skill content without loading it first.
     Use list_skills first if you are unsure of the exact skill name.
 
+    Pass a JSON string with exactly this key:
+        skill_name: exact name of the skill to load
+
     Args:
-        skill_name: exact name from the skill list (e.g., algorithm_extraction).
+        data: JSON string containing skill_name (e.g., {"skill_name": "algorithm_extraction"}).
     Returns:
         Full skill instructions as plain text, or an error message if not found.
     """
+    parsed = _parse_json_input(data)
+    skill_name = str(next(iter(parsed.values()), data.strip())).strip()
+
+    if not skill_name:
+        known = ", ".join(sorted(SKILL_REGISTRY.keys())) or "(none)"
+        return f"No skill name provided. Known skills: {known}"
+
     if skill_name in _skill_body_cache:
         return _skill_body_cache[skill_name]
 
-    entry = SKILL_REGISTRY.get(skill_name.strip())
+    entry = SKILL_REGISTRY.get(skill_name)
     if not entry:
         known = ", ".join(sorted(SKILL_REGISTRY.keys())) or "(none)"
         return f"Unknown skill {skill_name!r}. Known skills: {known}"
@@ -120,48 +164,71 @@ def load_skill(skill_name: str) -> str:
 
 
 @tool
-def compare_and_decide(content_a: str, content_b: str, comparison_type: str) -> str:
+def compare_and_decide(data: str) -> str:
     """
     Display two code fragments or algorithms side by side for comparison.
     Call this when you need to analyze two pieces of content together
     before making a clone detection decision.
 
+    Pass a JSON string with exactly these keys:
+        content_a      : Java source code or Algorithm A
+        content_b      : Python source code or Algorithm B
+        comparison_type: source_code or algorithm
+
     Args:
-        content_a: first fragment - Java source code or Algorithm A.
-        content_b: second fragment - Python source code or Algorithm B.
-        comparison_type: "source_code" when comparing raw code,
-                         "algorithm" when comparing extracted pseudocode.
+        data: JSON string containing content_a, content_b, comparison_type.
     Returns:
         A formatted string showing both fragments labeled and side by side.
     """
-    comparison_type = comparison_type.strip()
+    parsed = _parse_json_input(data)
+    if not parsed:
+        return (
+            f"Invalid JSON: {data!r}. "
+            "Pass a JSON string with keys: content_a, content_b, comparison_type."
+        )
+
+    content_a = str(parsed.get("content_a", "")).strip()
+    content_b = str(parsed.get("content_b", "")).strip()
+    comparison_type = str(parsed.get("comparison_type", "")).strip()
+
+    if not content_a or not content_b:
+        return "Both content_a and content_b must be non-empty."
+
     if comparison_type not in (COMPARE_TYPE_SOURCE_CODE, COMPARE_TYPE_ALGORITHM):
         return (
             f"Invalid comparison_type {comparison_type!r}. "
             f'Use "{COMPARE_TYPE_SOURCE_CODE}" or "{COMPARE_TYPE_ALGORITHM}".'
         )
 
-    label_left = "Java" if comparison_type == COMPARE_TYPE_SOURCE_CODE else "Algorithm A (Java side)"
-    label_right = "Python" if comparison_type == COMPARE_TYPE_SOURCE_CODE else "Algorithm B (Python side)"
+    label_left = (
+        "Java" if comparison_type == COMPARE_TYPE_SOURCE_CODE
+        else "Algorithm A (Java side)"
+    )
+    label_right = (
+        "Python" if comparison_type == COMPARE_TYPE_SOURCE_CODE
+        else "Algorithm B (Python side)"
+    )
 
     return (
-        f"=== {label_left} ===\n{content_a.strip()}\n\n"
-        f"=== {label_right} ===\n{content_b.strip()}\n"
+        f"=== {label_left} ===\n{content_a}\n\n"
+        f"=== {label_right} ===\n{content_b}\n"
     )
 
 
 @tool
-def write_result(verdict: str, confidence: float, reasoning: str) -> str:
+def write_result(data: str) -> str:
     """
     Record the final clone detection verdict for the current pair.
-    Call this exactly once after you have completed your analysis
-    and formed a final judgment. Do not call this more than once
-    per pair. Duplicate calls will be rejected.
+    Call this exactly once after completing your analysis.
+    Duplicate calls will be rejected.
+
+    Pass a JSON string with exactly these keys:
+        verdict   : CLONE or NOT_CLONE
+        confidence: float between 0.0 and 1.0
+        reasoning : max 100 words explaining your decision
 
     Args:
-        verdict: exactly CLONE or NOT_CLONE.
-        confidence: float between 0.0 and 1.0.
-        reasoning: max 100 words explaining your decision.
+        data: JSON string containing verdict, confidence, and reasoning.
     Returns:
         Confirmation message if recorded successfully, or an error description.
     """
@@ -176,17 +243,26 @@ def write_result(verdict: str, confidence: float, reasoning: str) -> str:
     if _context_pair_id is None or _context_dataset is None or _context_ground_truth is None:
         return "Internal error: pair context missing for write_result."
 
-    verdict = verdict.strip().upper()
+    parsed = _parse_json_input(data)
+    if not parsed:
+        return (
+            f"Invalid JSON: {data!r}. "
+            "Pass a JSON string with keys: verdict, confidence, reasoning."
+        )
+
+    verdict = str(parsed.get("verdict", "")).strip().upper()
+    reasoning = str(parsed.get("reasoning", "")).strip()
+    try:
+        confidence = float(parsed.get("confidence", 0.5))
+    except (TypeError, ValueError):
+        confidence = 0.5
+
     if verdict in ("NOT CLONE", "NON_CLONE"):
         verdict = "NOT_CLONE"
 
     if verdict not in ("CLONE", "NOT_CLONE"):
         return f"Invalid verdict {verdict!r}; use CLONE or NOT_CLONE."
 
-    try:
-        confidence = float(confidence)
-    except (TypeError, ValueError):
-        confidence = 0.5
     confidence = max(0.0, min(1.0, confidence))
 
     elapsed = 0.0
@@ -218,18 +294,21 @@ def write_result(verdict: str, confidence: float, reasoning: str) -> str:
 
 
 @tool
-def record_algorithms(java_algorithm: str, python_algorithm: str) -> str:
+def record_algorithms(data: str) -> str:
     """
     Save the extracted pseudocode algorithms for the current pair.
-    Call this exactly once per pair, and only after you have fully
-    extracted algorithms from BOTH the Java and Python fragments.
+    Call this exactly once per pair, only after extracting algorithms
+    from BOTH Java and Python fragments.
     Only call this on algorithm-based detection runs.
 
+    Pass a JSON string with exactly these keys:
+        java_algorithm  : pseudocode extracted from the Java fragment
+        python_algorithm: pseudocode extracted from the Python fragment
+
     Args:
-        java_algorithm: complete pseudocode extracted from the Java fragment.
-        python_algorithm: complete pseudocode extracted from the Python fragment.
+        data: JSON string containing exactly these keys: java_algorithm, python_algorithm.
     Returns:
-        Confirmation message if saved successfully, or an error if no active pair.
+        Confirmation message if saved successfully, or an error description.
     """
     if _context_pair_id is None:
         return "No active pair context; cannot record algorithms."
@@ -240,15 +319,25 @@ def record_algorithms(java_algorithm: str, python_algorithm: str) -> str:
             "Do not call record_algorithms more than once per pair."
         )
 
-    if not java_algorithm.strip() or not python_algorithm.strip():
+    parsed = _parse_json_input(data)
+    if not parsed:
+        return (
+            f"Invalid JSON: {data!r}. "
+            "Pass a JSON string with keys: java_algorithm, python_algorithm."
+        )
+
+    java_algorithm = str(parsed.get("java_algorithm", "")).strip()
+    python_algorithm = str(parsed.get("python_algorithm", "")).strip()
+
+    if not java_algorithm or not python_algorithm:
         return (
             "Both java_algorithm and python_algorithm must be non-empty. "
             "Extract algorithms from both fragments before calling this tool."
         )
 
     _algorithms_by_pair[_context_pair_id] = {
-        "java_algorithm": java_algorithm.strip(),
-        "python_algorithm": python_algorithm.strip(),
+        "java_algorithm": java_algorithm,
+        "python_algorithm": python_algorithm,
     }
 
     return f"Recorded algorithms for {_context_pair_id}."

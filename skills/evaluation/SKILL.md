@@ -13,13 +13,11 @@ Use this skill after you have completed your analysis and formed a final verdict
 4. A **reasoning** string of max 100 words citing the specific behavioral evidence that determined your verdict.
 
 ## Calling write_result
-Pass each value directly by its parameter name:
-- verdict:     your final decision (CLONE or NOT_CLONE)
-- confidence:  your certainty score (0.0 to 1.0)
-- reasoning:   your evidence summary (max 100 words)
+Pass a single JSON string as the data argument:
+{"verdict": "your verdict", "confidence": "your confidence score", "reasoning": "your reasoning here"}
 
 The tool automatically binds the pair_id, dataset, and timing - do not pass these yourself.
 
 ## Important Rules
-- Call `write_result` exactly once per pair - never twice. Duplicate calls will be rejected by the tool.
-- Do not call `write_result` before completing your full analysis. Record only your final judgment.
+- Do not call `write_result` before completing your full analysis.
+- Call `write_result` exactly once per pair.

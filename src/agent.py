@@ -28,7 +28,7 @@ def build_agent_system_prompt() -> str:
         System prompt text for the agent.
     """
     skill_lines = "\n".join(
-        f"  - {info['name']}: {info['description']}"
+        f"  SKILL {info['name']}: {info['description']}"
         for info in sorted(SKILL_REGISTRY.values(), key=lambda x: x["name"])
     )
 
@@ -45,7 +45,9 @@ def build_agent_system_prompt() -> str:
         "3. If you need a skill then follow the loaded skill instructions exactly.\n"
         "4. When you have a verdict, call write_result to record it.\n"
         "5. Never fabricate tool outputs - only use what tools return.\n\n"
-        f"Available skills:\n{skill_lines}"
+        "6. Never simulate or assume tool outputs — always call the tool "
+        "to get the real output before proceeding.\n\n"
+        f"Available skills (load with load_skill tool):\n{skill_lines}"
     )
 
 
@@ -77,11 +79,13 @@ def get_react_prompt_template() -> str:
         "Question: the input task you must solve\n"
         "Thought: plan your next step\n"
         "Action: the action to take, must be one of [{tool_names}]\n"
-        "Action Input: the parameter names and values for the chosen tool. Pass each parameter directly by name.\n"
+        "Action Input: a JSON string passed as the data argument to the chosen tool.\n"
         "Observation: tool output\n"
         "... repeat Thought/Action/Action Input/Observation as needed ...\n"
+        "Once write_result has been called and its confirmation appears in the Observation,\n"
+        "output your final Thought and Final Answer in a new step:\n"
         "Thought: I have completed detection and recorded the result.\n"
-        "Final Answer: state CLONE or NOT_CLONE and confirm write_result was called.\n\n"
+        "Final Answer: CLONE or NOT_CLONE\n\n"
         "Begin!\n\n"
         "Question: {input}\n"
         "Thought:{agent_scratchpad}"
