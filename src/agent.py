@@ -39,14 +39,14 @@ def build_agent_system_prompt() -> str:
         "Two code fragments are clones if they implement the same "
         "functionality and produce the same output for the same input, "
         "regardless of language, syntax, or structure differences.\n\n"
-        "RULES — follow these strictly:\n"
+        "RULES - follow these strictly:\n"
         "1. Use your available skills to guide your work.\n"
         "2. Never assume or invent skill content - always load it first.\n"
         "3. If you need a skill then follow the loaded skill instructions exactly.\n"
-        "4. When you have a verdict, call write_result to record it.\n"
-        "5. Never fabricate tool outputs - only use what tools return.\n\n"
-        "6. Never simulate or assume tool outputs — always call the tool "
-        "to get the real output before proceeding.\n\n"
+        "4. You MUST call write_result before giving your Final Answer. "
+        "Never give a Final Answer without calling write_result first.\n"
+        "5. Never fabricate, simulate, or assume tool outputs - always call "
+        "the tool and wait for the real Observation before proceeding.\n\n"
         f"Available skills (load with load_skill tool):\n{skill_lines}"
     )
 
@@ -79,7 +79,7 @@ def get_react_prompt_template() -> str:
         "Question: the input task you must solve\n"
         "Thought: plan your next step\n"
         "Action: the action to take, must be one of [{tool_names}]\n"
-        "Action Input: a JSON string passed as the data argument to the chosen tool.\n"
+        "Action Input: a JSON object with keys matching the tool's parameter names.\n"
         "Observation: tool output\n"
         "... repeat Thought/Action/Action Input/Observation as needed ...\n"
         "Once write_result has been called and its confirmation appears in the Observation,\n"
@@ -114,5 +114,5 @@ def build_react_executor(llm: BaseLanguageModel) -> AgentExecutor:
         tools=tools,
         verbose=True,
         max_iterations=AGENT_MAX_ITERATIONS,
-        handle_parsing_errors=True,
+        handle_parsing_errors=False,
     )

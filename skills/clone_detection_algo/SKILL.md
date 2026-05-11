@@ -24,8 +24,9 @@ You are comparing two pseudocode algorithms - Algorithm A extracted from Java an
 This comparison is purely logical. Do not reintroduce any language-specific reasoning - the pseudocode has already eliminated syntax and naming differences. Judge computational logic only.
 
 ## Output
-After you have reached a conclusion, you should have all three values needed to call `write_result`:
+You MUST call write_result first before giving your Final Answer.
 
+Pass a JSON string to write_result with exactly these keys:
 **"verdict"**    : "CLONE" if functionally identical, "NOT_CLONE" otherwise
 
 **"confidence"** : a float between 0.0 and 1.0 representing how certain you are of your verdict based on the evidence
