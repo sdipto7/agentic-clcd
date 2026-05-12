@@ -66,19 +66,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Cross-language clone detection experiments.")
     parser.add_argument(
         "--pipeline",
-        choices=[c for c in PIPELINE_CHOICES if c != "all"],
+        choices=PIPELINE_CHOICES,
         required=True,
         help="Pipeline to run.",
     )
     parser.add_argument(
         "--model",
-        choices=[c for c in MODEL_CHOICES if c != "all"],
+        choices=MODEL_CHOICES,
         required=True,
         help="Model alias to use.",
     )
     parser.add_argument(
         "--dataset",
-        choices=[c for c in DATASET_CHOICES if c != "all"],
+        choices=DATASET_CHOICES,
         required=True,
         help="Dataset to evaluate.",
     )
