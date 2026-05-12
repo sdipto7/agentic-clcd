@@ -4,9 +4,7 @@ Pipeline 2: extract algorithms per fragment, compare in a third LLM call.
 
 from __future__ import annotations
 
-import os
 import time
-import json
 from typing import Any, List
 
 from tqdm import tqdm
@@ -17,7 +15,6 @@ from src.constants import (
     PYTHON_LANGUAGE_IDENTIFIER,
     LABEL_TO_VERDICT,
     NOT_CLONE,
-    OUTPUT_DIR_BY_PIPELINE,
     PIPELINE_ALGO_BASED,
 )
 from src.logger import get_logger
@@ -25,37 +22,9 @@ from src.prompts import ALGO_DETECTION_PROMPT, ALGO_EXTRACTION_PROMPT
 from src.result_writer import ResultWriter
 from src.workflows.llm_helpers import invoke_with_single_retry, pace_api_call
 from src.workflows.llm_response_parser import interpret_llm_response
+from src.algorithm_writer import save_algorithm_pair
 
 logger = get_logger(__name__)
-
-
-def _save_algorithm_sidecar(
-    model_alias: str, 
-    dataset_name: str, 
-    algorithms_by_pair: dict[str, dict[str, str]]
-) -> None:
-    """
-    Write extracted algorithms for all pairs to a single JSON file.
-
-    The output is written under the algo_based output directory as
-    ``algorithms_<model_alias>_<dataset_name>.json``.
-
-    Args:
-        model_alias: Model alias for the current run (used in filename).
-        dataset_name: Dataset name for the current run (used in filename).
-        algorithms_by_pair: Mapping of pair_id -> {"java_algorithm": ..., "python_algorithm": ...}.
-
-    Returns:
-        None.
-    """
-    out_dir = OUTPUT_DIR_BY_PIPELINE[PIPELINE_ALGO_BASED]
-    os.makedirs(out_dir, exist_ok=True)
-
-    json_name = f"algorithms_{model_alias}_{dataset_name}.json"
-    json_path = os.path.join(out_dir, json_name)
-
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(algorithms_by_pair, f, ensure_ascii=False, indent=2)
 
 
 def run_algo_based_workflow(
@@ -138,6 +107,11 @@ def run_algo_based_workflow(
         pace_api_call()
 
     dataset_name = records[0]["dataset"] if records else "unknown_dataset"
-    _save_algorithm_sidecar(model_alias, dataset_name, algorithms_by_pair)
+    save_algorithm_pair(
+        pipeline=PIPELINE_ALGO_BASED,
+        model_alias=model_alias,
+        dataset_name=dataset_name,
+        algorithms_by_pair=algorithms_by_pair
+    )
 
     return writer.get_summary()
