@@ -12,7 +12,7 @@ def save_algorithm_pair(
     algorithms_by_pair: dict[str, dict[str, str]],
 ) -> None:
     """
-    Write extracted algorithms for all pairs to a single JSON file.
+    Write extracted algorithms for one or more pairs to a single JSON file.
 
     The output is written under the pipeline-specific output directory as
     ``algorithms_<model_alias>_<dataset_name>.json``.
@@ -32,5 +32,20 @@ def save_algorithm_pair(
     json_name = f"algorithms_{model_alias}_{dataset_name}.json"
     json_path = os.path.join(out_dir, json_name)
 
+    existing_algorithms_by_pair: dict[str, dict[str, str]] = {}
+    if os.path.isfile(json_path):
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                loaded = json.load(f)
+
+            if isinstance(loaded, dict):
+                existing_algorithms_by_pair = loaded
+
+        except (OSError, json.JSONDecodeError):
+            existing_algorithms_by_pair = {}
+
+    for pair_id, algo in algorithms_by_pair.items():
+        existing_algorithms_by_pair[pair_id] = algo
+
     with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(algorithms_by_pair, f, ensure_ascii=False, indent=2)
+        json.dump(existing_algorithms_by_pair, f, ensure_ascii=False, indent=2)

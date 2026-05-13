@@ -87,6 +87,18 @@ def run_agentic_workflow(
 
         elapsed = time.perf_counter() - t0
 
+        # Save algorithm for the pair if the agent used the algo_based approach
+        # and the write_result is successfuly executed (identified by presence of recorded algorithms).
+        pair_id = record["pair_id"]
+        algorithms_by_pair = get_recorded_algorithms()
+        if was_write_result_called() and pair_id in algorithms_by_pair:
+            save_algorithm_pair(
+                pipeline=PIPELINE_AGENTIC,
+                model_alias=model_alias,
+                dataset_name=record["dataset"],
+                algorithms_by_pair={pair_id: algorithms_by_pair[pair_id]},
+            )
+
         if not was_write_result_called():
             logger.warning(
                 "Agent did not call write_result for %s; recording ERROR.",
@@ -115,22 +127,5 @@ def run_agentic_workflow(
         set_active_result_writer(None)
 
         pace_api_call()
-
-    # Save algorithms for the pairs for which the agent used the algo_based approach
-    algorithms_by_pair = get_recorded_algorithms()
-    if algorithms_by_pair:
-        dataset_name = records[0]["dataset"] if records else "unknown_dataset"
-        save_algorithm_pair(
-            pipeline=PIPELINE_AGENTIC,
-            model_alias=model_alias,
-            dataset_name=dataset_name,
-            algorithms_by_pair=algorithms_by_pair
-        )
-
-        logger.info(
-            "Agentic algorithms saved: %d/%d pairs used algo-based path.",
-            len(algorithms_by_pair),
-            len(records),
-        )
 
     return writer.get_summary()

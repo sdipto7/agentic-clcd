@@ -45,8 +45,6 @@ def run_algo_based_workflow(
     Returns:
         Summary dict from ``writer.get_summary()``.
     """
-    algorithms_by_pair: dict[str, dict[str, str]] = {}
-
     for position, record in enumerate(tqdm(records, desc=f"algo_based/{model_alias}"), start=1):
         t0 = time.perf_counter()
         pair_id = record["pair_id"]
@@ -67,11 +65,6 @@ def run_algo_based_workflow(
         if not algo_py:
             algo_py = "(extraction failed — empty response)"
             logger.error("Python algorithm extraction empty for %s", pair_id)
-
-        algorithms_by_pair[pair_id] = {
-            "java_algorithm": algo_java,
-            "python_algorithm": algo_py,
-        }
 
         clone_detection_prompt = ALGO_DETECTION_PROMPT.format(algorithm_a=algo_java, algorithm_b=algo_py)
 
@@ -95,6 +88,19 @@ def run_algo_based_workflow(
             processing_time_seconds=elapsed,
         )
 
+        if verdict != ERROR:
+            save_algorithm_pair(
+                pipeline=PIPELINE_ALGO_BASED,
+                model_alias=model_alias,
+                dataset_name=record["dataset"],
+                algorithms_by_pair={
+                    pair_id: {
+                        "java_algorithm": algo_java,
+                        "python_algorithm": algo_py,
+                    },
+                },
+            )
+
         logger.info(
             "pair_id=%s pipeline=%s ground_truth=%s predicted=%s time=%.3fs",
             pair_id,
@@ -105,13 +111,5 @@ def run_algo_based_workflow(
         )
 
         pace_api_call()
-
-    dataset_name = records[0]["dataset"] if records else "unknown_dataset"
-    save_algorithm_pair(
-        pipeline=PIPELINE_ALGO_BASED,
-        model_alias=model_alias,
-        dataset_name=dataset_name,
-        algorithms_by_pair=algorithms_by_pair
-    )
 
     return writer.get_summary()
