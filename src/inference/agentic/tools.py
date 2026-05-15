@@ -10,13 +10,13 @@ from typing import Any, Optional
 
 from langchain_core.tools import tool
 
-from src.constants import (
+from src.core.constants import (
     COMPARE_TYPE_ALGORITHM,
     COMPARE_TYPE_SOURCE_CODE,
 )
-from src.logger import get_logger
-from src.result_writer import ResultWriter
-from src.skills import SKILL_REGISTRY
+from src.core.logger import get_logger
+from src.io.result_writer import ResultWriter
+from src.inference.agentic.skills import SKILL_REGISTRY
 
 logger = get_logger(__name__)
 

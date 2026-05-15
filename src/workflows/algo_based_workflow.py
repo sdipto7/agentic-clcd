@@ -9,7 +9,7 @@ from typing import Any, List
 
 from tqdm import tqdm
 
-from src.constants import (
+from src.core.constants import (
     ERROR,
     JAVA_LANGUAGE_IDENTIFIER,
     PYTHON_LANGUAGE_IDENTIFIER,
@@ -17,12 +17,12 @@ from src.constants import (
     NOT_CLONE,
     PIPELINE_ALGO_BASED,
 )
-from src.logger import get_logger
-from src.prompts import ALGO_DETECTION_PROMPT, ALGO_EXTRACTION_PROMPT
-from src.result_writer import ResultWriter
-from src.workflows.llm_helpers import invoke_with_single_retry, pace_api_call
-from src.workflows.llm_response_parser import interpret_llm_response
-from src.algorithm_writer import save_algorithm_pair
+from src.core.logger import get_logger
+from src.inference.prompts import ALGO_DETECTION_PROMPT, ALGO_EXTRACTION_PROMPT
+from src.io.result_writer import ResultWriter
+from src.inference.llm_helper import invoke_with_single_retry, pace_api_call
+from src.inference.llm_response_parser import interpret_llm_response
+from src.io.algorithm_writer import save_algorithm_pair
 
 logger = get_logger(__name__)
 

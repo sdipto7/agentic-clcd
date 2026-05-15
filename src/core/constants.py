@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 
-PROJECT_ROOT: str = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+PROJECT_ROOT: str = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
 CLONE: str = "CLONE"
 NOT_CLONE: str = "NOT_CLONE"

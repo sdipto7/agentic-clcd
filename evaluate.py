@@ -16,7 +16,7 @@ _PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from src.constants import CLONE, NOT_CLONE, PROJECT_ROOT  # noqa: E402
+from src.core.constants import CLONE, NOT_CLONE, PROJECT_ROOT  # noqa: E402
 
 _KNOWN_DATASETS: Tuple[str, ...] = ("codenet", "xlcost")
 

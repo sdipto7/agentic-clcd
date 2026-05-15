@@ -2,7 +2,7 @@ import os
 import csv
 from typing import Any, List
 
-from src.constants import ERROR, OUTPUT_DIR_BY_PIPELINE, RESULTS_CSV_PREFIX
+from src.core.constants import ERROR, OUTPUT_DIR_BY_PIPELINE, RESULTS_CSV_PREFIX
 
 
 def results_csv_path(pipeline: str, model_alias: str, dataset: str) -> str:

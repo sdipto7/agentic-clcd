@@ -16,7 +16,7 @@ _PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from src.constants import (  # noqa: E402
+from src.core.constants import (  # noqa: E402
     DATASET_CHOICES,
     MODEL_CHOICES,
     PIPELINE_AGENTIC,
@@ -24,15 +24,15 @@ from src.constants import (  # noqa: E402
     PIPELINE_CHOICES,
     PIPELINE_DIRECT,
 )
-from src.result_helper import results_csv_path, prepare_records_to_run  # noqa: E402
-from src.dataset_loader import DatasetLoader  # noqa: E402
-from src.llm import create_chat_model  # noqa: E402
-from src.logger import get_logger, setup_logging  # noqa: E402
-from src.result_writer import ResultWriter  # noqa: E402
+from src.io.result_helper import results_csv_path, prepare_records_to_run  # noqa: E402
+from src.io.dataset_loader import DatasetLoader  # noqa: E402
+from src.inference.llm import create_chat_model  # noqa: E402
+from src.core.logger import get_logger, setup_logging  # noqa: E402
+from src.io.result_writer import ResultWriter  # noqa: E402
 from src.workflows.agentic_workflow import run_agentic_workflow  # noqa: E402
 from src.workflows.algo_based_workflow import run_algo_based_workflow  # noqa: E402
 from src.workflows.direct_workflow import run_direct_workflow  # noqa: E402
-from src.token_usage_writer import save_token_usage_data  # noqa: E402
+from src.io.token_usage_writer import save_token_usage_data  # noqa: E402
 
 
 logger = get_logger(__name__)

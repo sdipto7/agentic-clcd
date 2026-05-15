@@ -9,23 +9,23 @@ from typing import Any, List
 
 from tqdm import tqdm
 
-from src.agent import build_react_executor
-from src.constants import (
+from src.inference.agentic.agent import build_react_executor
+from src.core.constants import (
     ERROR,
     LABEL_TO_VERDICT,
     NOT_CLONE,
     PIPELINE_AGENTIC,
 )
-from src.logger import get_logger
-from src.result_writer import ResultWriter
-from src.tools import (
+from src.core.logger import get_logger
+from src.io.result_writer import ResultWriter
+from src.inference.agentic.tools import (
     get_last_predicted_label,
     set_active_result_writer,
     was_write_result_called,
     get_recorded_algorithms,
 )
-from src.workflows.llm_helpers import pace_api_call
-from src.algorithm_writer import save_algorithm_pair
+from src.inference.llm_helper import pace_api_call
+from src.io.algorithm_writer import save_algorithm_pair
 
 logger = get_logger(__name__)
 

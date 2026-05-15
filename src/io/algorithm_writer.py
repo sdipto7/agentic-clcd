@@ -1,7 +1,7 @@
 import json
 import os
 
-from src.constants import OUTPUT_DIR_BY_PIPELINE
+from src.core.constants import OUTPUT_DIR_BY_PIPELINE
 
 
 def save_algorithm_pair(

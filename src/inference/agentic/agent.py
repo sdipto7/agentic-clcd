@@ -11,9 +11,9 @@ from langchain_core.language_models import BaseLanguageModel
 from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import BaseTool
 
-from src.constants import AGENT_MAX_ITERATIONS
-from src.skills import SKILL_REGISTRY
-from src.tools import get_agent_tools
+from src.core.constants import AGENT_MAX_ITERATIONS
+from src.inference.agentic.skills import SKILL_REGISTRY
+from src.inference.agentic.tools import get_agent_tools
 
 
 def build_agent_system_prompt() -> str:
@@ -114,5 +114,5 @@ def build_react_executor(llm: BaseLanguageModel) -> AgentExecutor:
         tools=tools,
         verbose=True,
         max_iterations=AGENT_MAX_ITERATIONS,
-        handle_parsing_errors=False,
+        handle_parsing_errors=True,
     )

@@ -8,8 +8,8 @@ import json
 import os
 from typing import Any, Iterator, List
 
-from src.constants import DATASET_FILE_MAP
-from src.logger import get_logger
+from src.core.constants import DATASET_FILE_MAP
+from src.core.logger import get_logger
 
 logger = get_logger(__name__)
 

@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 from typing import Any, Dict
 
-from src.constants import OUTPUT_DIR_BY_PIPELINE
+from src.core.constants import OUTPUT_DIR_BY_PIPELINE
 
 
 def save_token_usage_data(

@@ -8,7 +8,7 @@ import csv
 import os
 from typing import Any
 
-from src.constants import CLONE, ERROR, LABEL_TO_VERDICT, NOT_CLONE
+from src.core.constants import CLONE, ERROR, LABEL_TO_VERDICT, NOT_CLONE
 
 
 class ResultWriter:

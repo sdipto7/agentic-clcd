@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import os
-from src.constants import LOG_FILE_PATH, LOGS_DIR
+from src.core.constants import LOG_FILE_PATH, LOGS_DIR
 
 _CONFIGURED: bool = False
 

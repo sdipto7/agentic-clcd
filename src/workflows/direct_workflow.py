@@ -9,17 +9,17 @@ from typing import Any, List
 
 from tqdm import tqdm
 
-from src.constants import (
+from src.core.constants import (
     ERROR,
     LABEL_TO_VERDICT,
     NOT_CLONE,
     PIPELINE_DIRECT,
 )
-from src.logger import get_logger
-from src.prompts import DIRECT_DETECTION_PROMPT
-from src.result_writer import ResultWriter
-from src.workflows.llm_helpers import invoke_with_single_retry, pace_api_call
-from src.workflows.llm_response_parser import interpret_llm_response
+from src.core.logger import get_logger
+from src.inference.prompts import DIRECT_DETECTION_PROMPT
+from src.io.result_writer import ResultWriter
+from src.inference.llm_helper import invoke_with_single_retry, pace_api_call
+from src.inference.llm_response_parser import interpret_llm_response
 
 logger = get_logger(__name__)
 

@@ -11,7 +11,7 @@ import logging
 import re
 from typing import Any, Optional, Tuple
 
-from src.constants import CLONE, ERROR, NOT_CLONE
+from src.core.constants import CLONE, ERROR, NOT_CLONE
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def _strip_code_fence(text: str) -> str:
     return stripped
 
 
-def parse_detection_json(raw_text: str) -> Optional[dict[str, Any]]:
+def _parse_detection_json(raw_text: str) -> Optional[dict[str, Any]]:
     """
     Parse a JSON object with verdict, confidence, and reasoning from model text.
 
@@ -64,7 +64,7 @@ def parse_detection_json(raw_text: str) -> Optional[dict[str, Any]]:
     return data
 
 
-def normalize_verdict_str(value: Any) -> Optional[str]:
+def _normalize_verdict_str(value: Any) -> Optional[str]:
     """
     Map assorted verdict strings to CLONE or NOT_CLONE.
 
@@ -87,7 +87,7 @@ def normalize_verdict_str(value: Any) -> Optional[str]:
     return None
 
 
-def extract_verdict_from_text(raw_text: str) -> Optional[str]:
+def _extract_verdict_from_text(raw_text: str) -> Optional[str]:
     """
     Heuristically find CLONE / NOT_CLONE in free-form text.
 
@@ -111,9 +111,7 @@ def extract_verdict_from_text(raw_text: str) -> Optional[str]:
     return None
 
 
-def interpret_llm_response(
-    raw_text: str,
-) -> Tuple[str, float, str]:
+def interpret_llm_response(raw_text: str) -> Tuple[str, float, str]:
     """
     Convert model output into verdict, confidence, and reasoning.
 
@@ -125,10 +123,10 @@ def interpret_llm_response(
     Returns:
         Tuple of (verdict, confidence, reasoning). Verdict may be ERROR if empty.
     """
-    parsed = parse_detection_json(raw_text)
+    parsed = _parse_detection_json(raw_text)
 
     if parsed is not None:
-        verdict = normalize_verdict_str(parsed.get("verdict"))
+        verdict = _normalize_verdict_str(parsed.get("verdict"))
         confidence_raw = parsed.get("confidence", 0.5)
 
         try:
@@ -144,14 +142,14 @@ def interpret_llm_response(
                 "Parsed JSON but verdict missing or invalid; using fallback. Raw: %s",
                 raw_text[:500],
             )
-            verdict = extract_verdict_from_text(raw_text) or ERROR
+            verdict = _extract_verdict_from_text(raw_text) or ERROR
             confidence = 0.5
 
         return verdict, confidence, reasoning
 
     logger.warning("JSON parse failed; using text fallback. Raw: %s", raw_text[:500])
     
-    verdict = extract_verdict_from_text(raw_text)
+    verdict = _extract_verdict_from_text(raw_text)
     if verdict is None:
         return ERROR, 0.5, ""
     

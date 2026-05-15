@@ -9,8 +9,8 @@ from typing import Any, Dict, List
 
 import yaml
 
-from src.constants import PROJECT_ROOT
-from src.logger import get_logger
+from src.core.constants import PROJECT_ROOT
+from src.core.logger import get_logger
 
 logger = get_logger(__name__)
 

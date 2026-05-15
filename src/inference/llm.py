@@ -11,7 +11,7 @@ import os
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
-from src.constants import MODEL_MAP, OPENAI_API_BASE_URL
+from src.core.constants import MODEL_MAP, OPENAI_API_BASE_URL
 
 load_dotenv()
 

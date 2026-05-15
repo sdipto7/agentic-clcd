@@ -18,7 +18,7 @@ _PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from src.constants import (  # noqa: E402
+from src.core.constants import (  # noqa: E402
     DATASET_CODENET,
     DATASET_XLCOST,
     JAVA_LANGUAGE_IDENTIFIER,
