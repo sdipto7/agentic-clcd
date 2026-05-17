@@ -10,7 +10,7 @@ import csv
 import os
 import sys
 from datetime import datetime
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Tuple
 
 _PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 if _PROJECT_ROOT not in sys.path:
@@ -18,150 +18,246 @@ if _PROJECT_ROOT not in sys.path:
 
 from src.core.constants import CLONE, NOT_CLONE, PROJECT_ROOT  # noqa: E402
 
-_KNOWN_DATASETS: Tuple[str, ...] = ("codenet", "xlcost")
-
 
 def _iter_csv_files(results_dir: str) -> List[str]:
-    """Recursively collect CSV paths."""
-    found: List[str] = []
+    """
+    Recursively find output CSV files under a directory.
+
+    This scanner is intentionally strict: it only return CSV files whose filename
+    matches `results_*.csv` (case-insensitive). This avoids accidentally
+    including non-result artifacts such as `token_usage.csv`.
+
+    Args:
+        results_dir: Root directory to walk recursively (e.g., `output/`).
+
+    Returns:
+        A sorted list of absolute file paths to matching `results_*.csv` files.
+    """
+    csv_files: List[str] = []
+
     for dirpath, _dirnames, filenames in os.walk(results_dir):
         for name in filenames:
-            if name.lower().endswith(".csv"):
-                found.append(os.path.join(dirpath, name))
-    return sorted(found)
+            if name.lower().startswith("results_") and name.lower().endswith(".csv"):
+                csv_files.append(os.path.join(dirpath, name))
+
+    return sorted(csv_files)
 
 
-def _parse_pipeline_model_dataset(path: str) -> Tuple[str, str, str]:
+def _extract_pipeline_model_dataset_from_path(path: str) -> Tuple[str, str, str]:
     """
-    Infer (pipeline, model, dataset) from path segments and filename.
+    Extract (pipeline, model, dataset) from a results CSV file path.
 
-    Expected layout: ``.../output/<pipeline>/results_<model_alias>_<dataset>.csv`` where
-    ``dataset`` is one of the known single-token dataset keys.
+    Parsing rules:
+    - `pipeline` is the name of the parent directory containing the CSV.
+      Example: `.../output/agentic/results_x_y.csv` -> pipeline = `agentic`.
+    - `model` and `dataset` are extracted from the filename if it follows the pattern
+      `results_<model_alias>_<dataset>.csv`.
+
+    If the filename does not match the expected pattern (missing prefix/suffix or
+    missing underscore in the stem), `model` and `dataset` default to `"unknown"`.
+
+    Args:
+        path: Path to a CSV file.
+
+    Returns:
+        A tuple (pipeline, model, dataset) where each element is a string.
     """
     basename = os.path.basename(path)
     parent = os.path.basename(os.path.dirname(path))
     pipeline = parent
     model = "unknown"
     dataset = "unknown"
+
     if basename.startswith("results_") and basename.endswith(".csv"):
-        core = basename[len("results_") : -len(".csv")]
-        for ds in _KNOWN_DATASETS:
-            suffix = "_" + ds
-            if core.endswith(suffix):
-                model = core[: -len(suffix)]
-                dataset = ds
-                break
+        model_dataset_part = basename[len("results_") : -len(".csv")]
+        if "_" in model_dataset_part:
+            model, dataset = model_dataset_part.rsplit("_", 1)
+
     return pipeline, model, dataset
 
 
-def _row_metrics(rows: Iterable[dict[str, str]]) -> Dict[str, Any]:
-    """Compute confusion counts and derived metrics."""
-    tp = tn = fp = fn = 0
+def _compute_classification_metrics(rows: Iterable[dict[str, str]]) -> Dict[str, Any]:
+    """
+    Compute classification counts and standard metrics from CSV rows.
+
+    Each row is expected to contain:
+    - ground_truth: integer label (1 for clone, 0 for not-clone). Missing/invalid
+      values are treated as -1 (unknown) and won't match TP/TN/FP/FN conditions.
+    - predicted_label: a string label. It is normalized by uppercasing and mapping
+      common variants:
+        - CLONE constant -> positive class
+        - NOT_CLONE constant -> negative class
+
+    Confusion counting behavior:
+    - true_positive, true_negative, false_positive, and false_negative are
+      accumulated for recognized predictions (clone / not-clone).
+
+    Metrics:
+    - accuracy = (true_positive + true_negative) / total
+    - precision = true_positive / (true_positive + false_positive)
+    - recall = true_positive / (true_positive + false_negative)
+    - f1_score = 2 * precision * recall / (precision + recall)
+
+    Args:
+        rows: Iterable of dict-like CSV rows.
+
+    Returns:
+        A dict containing confusion counts and derived metrics:
+        total, clones, non_clones, true_positive, true_negative,
+        false_positive, false_negative, accuracy, precision, recall,
+        f1_score.
+    """
+    true_positive = 0
+    true_negative = 0
+    false_positive = 0
+    false_negative = 0
     total = 0
     clones = 0
     non_clones = 0
+    
     for row in rows:
         total += 1
+
         try:
-            gt = int(row.get("ground_truth", -1))
+            ground_truth = int(row.get("ground_truth", -1))
         except ValueError:
-            gt = -1
+            ground_truth = -1
+
         pred_raw = str(row.get("predicted_label", "")).strip().upper()
         if pred_raw in ("NOT CLONE", "NON_CLONE"):
             pred_raw = NOT_CLONE
-        if pred_raw == CLONE:
-            pred = 1
-        elif pred_raw == NOT_CLONE:
-            pred = 0
-        else:
-            pred = -1  # ERROR or unknown
 
-        if gt == 1:
+        if pred_raw == CLONE:
+            predicted_label = 1
+        elif pred_raw == NOT_CLONE:
+            predicted_label = 0
+
+        else:
+            predicted_label = -1  # ERROR or unknown
+
+        if ground_truth == 1:
             clones += 1
-        elif gt == 0:
+        elif ground_truth == 0:
             non_clones += 1
 
-        if pred == -1:
-            if gt == 1:
-                fn += 1
-            elif gt == 0:
-                fp += 1
+        if predicted_label == -1:
+            if ground_truth == 1:
+                false_negative += 1
+            elif ground_truth == 0:
+                false_positive += 1
             continue
 
-        if gt == 1 and pred == 1:
-            tp += 1
-        elif gt == 1 and pred == 0:
-            fn += 1
-        elif gt == 0 and pred == 1:
-            fp += 1
-        elif gt == 0 and pred == 0:
-            tn += 1
+        if ground_truth == 1 and predicted_label == 1:
+            true_positive += 1
+        elif ground_truth == 1 and predicted_label == 0:
+            false_negative += 1
+        elif ground_truth == 0 and predicted_label == 1:
+            false_positive += 1
+        elif ground_truth == 0 and predicted_label == 0:
+            true_negative += 1
 
-    correct = tp + tn
+    correct = true_positive + true_negative
     accuracy = correct / total if total else 0.0
-    prec_denom = tp + fp
-    rec_denom = tp + fn
-    precision = tp / prec_denom if prec_denom else 0.0
-    recall = tp / rec_denom if rec_denom else 0.0
+    precision_denom = true_positive + false_positive
+    recall_denom = true_positive + false_negative
+    precision = true_positive / precision_denom if precision_denom else 0.0
+    recall = true_positive / recall_denom if recall_denom else 0.0
     f1_denom = precision + recall
-    f1 = (2 * precision * recall / f1_denom) if f1_denom else 0.0
+    f1_score = (2 * precision * recall / f1_denom) if f1_denom else 0.0
 
     return {
         "total": total,
         "clones": clones,
         "non_clones": non_clones,
-        "tp": tp,
-        "tn": tn,
-        "fp": fp,
-        "fn": fn,
+        "true_positive": true_positive,
+        "true_negative": true_negative,
+        "false_positive": false_positive,
+        "false_negative": false_negative,
         "accuracy": accuracy,
         "precision": precision,
         "recall": recall,
-        "f1": f1,
+        "f1_score": f1_score,
     }
 
 
 def _evaluate_file(path: str) -> Dict[str, Any]:
-    """Load one CSV and compute metrics plus inferred metadata."""
+    """
+    Evaluate one results CSV file and return a single aggregated report row.
+
+    This function:
+    - reads the CSV at path using csv.DictReader
+    - infers pipeline, model, and dataset from the file path
+    - computes classification counts and metrics across all rows
+    - returns a dict that merges the inferred metadata with the computed metrics
+
+    Expected CSV columns:
+    - ground_truth: 1 for clone, 0 for not-clone
+    - predicted_label: label string that will be normalized by the metrics function
+
+    Args:
+        path: Path to a single results CSV file.
+
+    Returns:
+        A dictionary with keys:
+        file, pipeline, model, dataset,
+        total, clones, non_clones,
+        true_positive, true_negative, false_positive, false_negative,
+        accuracy, precision, recall, f1_score.
+    """
     with open(path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         rows = list(reader)
-    pipeline, model, dataset = _parse_pipeline_model_dataset(path)
-    meta = _row_metrics(rows)
+
+    pipeline, model, dataset = _extract_pipeline_model_dataset_from_path(path)
+
+    metrics = _compute_classification_metrics(rows)
+
     return {
         "file": path,
         "pipeline": pipeline,
         "model": model,
         "dataset": dataset,
-        **meta,
+        **metrics,
     }
 
 
-def _filter_by_pipeline(rows: List[Dict[str, Any]], pipeline: Optional[str]) -> List[Dict[str, Any]]:
-    if not pipeline:
-        return rows
-    return [r for r in rows if r["pipeline"] == pipeline]
+def _get_report_csv_path(prefix: str = "evaluation_report") -> str:
+    """
+    Build a timestamped report CSV path under the reports directory.
 
+    Args:
+        prefix: Filename prefix to use before the timestamp.
 
-def _print_table(rows: List[Dict[str, Any]]) -> None:
-    """Pretty-print comparison table."""
-    header = (
-        f"{'pipeline':10} | {'model':14} | {'dataset':8} | "
-        f"{'acc':>7} | {'prec':>7} | {'rec':>7} | {'f1':>7} | "
-        f"{'tot':>5} | {'tp':>3} | {'tn':>3} | {'fp':>3} | {'fn':>3}"
-    )
-    print(header)
-    print("-" * len(header))
-    for r in rows:
-        print(
-            f"{r['pipeline']:10} | {r['model']:14} | {r['dataset']:8} | "
-            f"{r['accuracy']:7.4f} | {r['precision']:7.4f} | {r['recall']:7.4f} | {r['f1']:7.4f} | "
-            f"{r['total']:5d} | {r['tp']:3d} | {r['tn']:3d} | {r['fp']:3d} | {r['fn']:3d}"
-        )
+    Returns:
+        Full path to a CSV file under PROJECT_ROOT/reports named like
+        prefix_YYYYMMDD_HHMMSS.csv.
+    """
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    reports_dir = os.path.join(PROJECT_ROOT, "reports")
+
+    return os.path.join(reports_dir, f"{prefix}_{stamp}.csv")
 
 
 def _write_report_csv(path: str, rows: List[Dict[str, Any]]) -> None:
-    """Persist aggregated metrics."""
+    """
+    Write an aggregated evaluation report CSV to disk.
+
+    The output CSV contains one row per evaluated input file (or per evaluated
+    result set), with metadata fields (pipeline, model, dataset) and the computed
+    classification metrics and confusion counts.
+
+    The destination directory is created if it does not already exist. The file is
+    written with a header row followed by one row per element in rows.
+
+    Args:
+        path: Output CSV file path to write (typically under the reports directory).
+        rows: List of dictionaries containing the report fields to write. Each dict
+            must provide values for the predefined report columns written by this
+            function.
+
+    Returns:
+        None.
+    """
     os.makedirs(os.path.dirname(path), exist_ok=True)
     fieldnames = [
         "pipeline",
@@ -170,13 +266,14 @@ def _write_report_csv(path: str, rows: List[Dict[str, Any]]) -> None:
         "accuracy",
         "precision",
         "recall",
-        "f1",
+        "f1_score",
         "total",
-        "tp",
-        "tn",
-        "fp",
-        "fn",
+        "true_positive",
+        "true_negative",
+        "false_positive",
+        "false_negative",
     ]
+
     with open(path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -184,47 +281,20 @@ def _write_report_csv(path: str, rows: List[Dict[str, Any]]) -> None:
             writer.writerow({k: r[k] for k in fieldnames})
 
 
-def _write_markdown_summary(path: str, rows: List[Dict[str, Any]]) -> None:
-    """Optional markdown table for quick reading."""
-    lines = [
-        "# Evaluation summary",
-        "",
-        "| pipeline | model | dataset | accuracy | precision | recall | f1 | total |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- |",
-    ]
-    for r in rows:
-        lines.append(
-            f"| {r['pipeline']} | {r['model']} | {r['dataset']} | "
-            f"{r['accuracy']:.4f} | {r['precision']:.4f} | {r['recall']:.4f} | "
-            f"{r['f1']:.4f} | {r['total']} |"
-        )
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
-
-
 def main() -> None:
     """CLI for scanning CSV outputs and writing reports."""
     parser = argparse.ArgumentParser(description="Evaluate experiment CSV outputs.")
     parser.add_argument(
         "--results_dir",
+        required=False,
         default=os.path.join(PROJECT_ROOT, "output"),
         help="Directory to scan recursively for result CSV files.",
     )
     parser.add_argument(
-        "--pipeline",
-        default=None,
-        help="If set, only include CSVs stored under this pipeline subfolder name.",
-    )
-    parser.add_argument(
         "--file",
+        required=False,
         default=None,
         help="Evaluate a single CSV instead of scanning a directory.",
-    )
-    parser.add_argument(
-        "--write_markdown",
-        action="store_true",
-        help="Also write reports/evaluation_summary_<timestamp>.md",
     )
     args = parser.parse_args()
 
@@ -241,23 +311,11 @@ def main() -> None:
     for path in targets:
         reports.append(_evaluate_file(path))
 
-    reports = _filter_by_pipeline(reports, args.pipeline)
-    if not reports:
-        print("No matching results after filtering.")
-        sys.exit(1)
+    csv_path = _get_report_csv_path()
 
-    _print_table(reports)
+    _write_report_csv(csv_path, reports)
 
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    reports_dir = os.path.join(PROJECT_ROOT, "reports")
-    csv_out = os.path.join(reports_dir, f"evaluation_report_{stamp}.csv")
-    _write_report_csv(csv_out, reports)
-    print(f"\nWrote detailed report CSV: {csv_out}")
-
-    if args.write_markdown:
-        md_out = os.path.join(reports_dir, f"evaluation_summary_{stamp}.md")
-        _write_markdown_summary(md_out, reports)
-        print(f"Wrote markdown summary: {md_out}")
+    print(f"Detailed CSV report: {csv_path}")
 
 
 if __name__ == "__main__":

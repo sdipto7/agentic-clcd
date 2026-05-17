@@ -165,19 +165,7 @@ Evaluate a single CSV:
 python evaluate.py --file output/direct/results_deepseek_v3_xlcost.csv
 ```
 
-Filter to one pipeline folder name:
-
-```bash
-python evaluate.py --pipeline direct
-```
-
-Write an additional markdown summary report:
-
-```bash
-python evaluate.py --write_markdown
-```
-
-Evaluation logic lives in `evaluate.py`.
+Evaluation is done in `evaluate.py`.
 
 ---
 
