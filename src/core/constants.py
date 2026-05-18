@@ -34,11 +34,10 @@ DATASET_FILE_MAP: dict[str, str] = {
 }
 
 MODEL_MAP: dict[str, str] = {
-    "deepseek_v3": "deepseek/deepseek-chat",
-    "deepseek_r1": "deepseek/deepseek-r1",
-    "gpt_4o": "openai/gpt-4o",
-    "llama": "meta-llama/llama-3.3-70b-instruct",
-    "qwen": "qwen/qwen-2.5-72b-instruct",
+    "deepseek-v3.2": "deepseek/deepseek-v3.2",
+    "gpt-4o": "openai/gpt-4o-2024-11-20",
+    "claude-3.5-haiku": "anthropic/claude-3.5-haiku",
+    "llama-3.3-nemotron": "nvidia/llama-3.3-nemotron-super-49b-v1.5",
 }
 
 OPENAI_API_BASE_URL: str = "https://openrouter.ai/api/v1"
