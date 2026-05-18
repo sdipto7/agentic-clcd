@@ -15,7 +15,6 @@ def save_token_usage_data(
     pairs: int,
     elapsed_seconds: float,
     token_usage: Dict[str, Any],
-    metrics: Dict[str, Any],
     run_status: str = "success",
 ) -> None:
     """
@@ -32,8 +31,6 @@ def save_token_usage_data(
         elapsed_seconds: Total run time in seconds.
         token_usage: Aggregated usage counters (missing keys default to 0):
             successful_requests, prompt_tokens, completion_tokens, total_tokens, total_cost.
-        metrics: Run summary metrics (missing keys default to 0.0):
-            accuracy, precision, recall, f1.
         run_status: Status of the run (e.g., "success", "failed").
     Returns:
         None.
@@ -55,10 +52,6 @@ def save_token_usage_data(
         "completion_tokens",
         "total_tokens",
         "total_cost_usd",
-        "accuracy",
-        "precision",
-        "recall",
-        "f1",
     ]
 
     row = {
@@ -74,10 +67,6 @@ def save_token_usage_data(
         "completion_tokens": int(token_usage.get("completion_tokens", 0) or 0),
         "total_tokens": int(token_usage.get("total_tokens", 0) or 0),
         "total_cost_usd": f"{float(token_usage.get('total_cost', 0.0) or 0.0):.6f}",
-        "accuracy": f"{float(metrics.get('accuracy', 0.0) or 0.0):.6f}",
-        "precision": f"{float(metrics.get('precision', 0.0) or 0.0):.6f}",
-        "recall": f"{float(metrics.get('recall', 0.0) or 0.0):.6f}",
-        "f1": f"{float(metrics.get('f1', 0.0) or 0.0):.6f}",
     }
 
     with open(csv_path, "a", newline="", encoding="utf-8") as f:

@@ -37,7 +37,7 @@ from src.io.token_usage_writer import save_token_usage_data  # noqa: E402
 
 logger = get_logger(__name__)
 
-WorkflowFn = Callable[[Any, List[dict[str, Any]], ResultWriter, str], dict[str, Any]]
+WorkflowFn = Callable[[Any, List[dict[str, Any]], ResultWriter, str], None]
 
 WORKFLOW_REGISTRY: Dict[str, WorkflowFn] = {
     PIPELINE_DIRECT: run_direct_workflow,
@@ -116,12 +116,11 @@ def main() -> None:
     )
 
     t0 = time.perf_counter()
-    summary: dict[str, Any] | None = None
     run_status = "success"
 
     with get_openai_callback() as cb:
         try:
-            summary = runner(llm, records_to_run, writer, model_alias)
+            runner(llm, records_to_run, writer, model_alias)
         except KeyboardInterrupt:
             run_status = "interrupted"
             raise
@@ -131,8 +130,6 @@ def main() -> None:
             raise
         finally:
             elapsed_seconds = time.perf_counter() - t0
-            if summary is None:
-                summary = writer.get_summary()
 
             save_token_usage_data(
                 pipeline=pipeline,
@@ -148,7 +145,6 @@ def main() -> None:
                     "successful_requests": cb.successful_requests,
                     "total_cost": cb.total_cost,
                 },
-                metrics=summary,
             )
 
 

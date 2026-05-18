@@ -29,7 +29,7 @@ def run_direct_workflow(
     records: List[dict[str, Any]],
     writer: ResultWriter,
     model_alias: str,
-) -> dict[str, Any]:
+) -> None:
     """
     Execute Direct Pipeline over all records.
 
@@ -38,9 +38,6 @@ def run_direct_workflow(
         records: Normalized dataset rows.
         writer: ResultWriter for this run.
         model_alias: Model key (for logging only; already on writer).
-
-    Returns:
-        Summary dict from ``writer.get_summary()``.
     """
     for position, record in enumerate(tqdm(records, desc=f"direct/{model_alias}"), start=1):
         t0 = time.perf_counter()
@@ -77,5 +74,3 @@ def run_direct_workflow(
         )
 
         pace_api_call()
-
-    return writer.get_summary()

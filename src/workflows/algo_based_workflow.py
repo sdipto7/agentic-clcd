@@ -32,7 +32,7 @@ def run_algo_based_workflow(
     records: List[dict[str, Any]],
     writer: ResultWriter,
     model_alias: str,
-) -> dict[str, Any]:
+) -> None:
     """
     Execute Algorithm-Based Pipeline (three calls per pair) over all records.
 
@@ -41,9 +41,6 @@ def run_algo_based_workflow(
         records: Normalized dataset rows.
         writer: ResultWriter for this run.
         model_alias: Model key for tqdm label.
-
-    Returns:
-        Summary dict from ``writer.get_summary()``.
     """
     for position, record in enumerate(tqdm(records, desc=f"algo_based/{model_alias}"), start=1):
         t0 = time.perf_counter()
@@ -111,5 +108,3 @@ def run_algo_based_workflow(
         )
 
         pace_api_call()
-
-    return writer.get_summary()

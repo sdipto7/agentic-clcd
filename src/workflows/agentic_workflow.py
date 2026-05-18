@@ -55,7 +55,7 @@ def run_agentic_workflow(
     records: List[dict[str, Any]],
     writer: ResultWriter,
     model_alias: str,
-) -> dict[str, Any]:
+) -> None:
     """
     Execute Pipeline 3: one ReAct episode per record.
 
@@ -64,9 +64,6 @@ def run_agentic_workflow(
         records: Normalized dataset rows.
         writer: ResultWriter for this run.
         model_alias: Model key for tqdm label.
-
-    Returns:
-        Summary dict from ``writer.get_summary()``.
     """
     executor = build_react_executor(llm)
 
@@ -127,5 +124,3 @@ def run_agentic_workflow(
         set_active_result_writer(None)
 
         pace_api_call()
-
-    return writer.get_summary()

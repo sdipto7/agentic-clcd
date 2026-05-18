@@ -127,35 +127,3 @@ class ResultWriter:
             writer.writerow(row)
 
         self._update_counts(ground_truth, predicted_label)
-
-
-    def get_summary(self) -> dict[str, Any]:
-        """
-        Return aggregate metrics for everything recorded by this writer instance.
-
-        Returns:
-            Dict with total, correct, tp, tn, fp, fn, accuracy, precision, recall, f1.
-        """
-        accuracy = self._correct / self._total if self._total else 0.0
-
-        precision_denominator = self._true_positive + self._false_positive
-        precision = self._true_positive / precision_denominator if precision_denominator else 0.0
-
-        recall_denominator = self._true_positive + self._false_negative
-        recall = self._true_positive / recall_denominator if recall_denominator else 0.0
- 
-        f1_denominator = precision + recall
-        f1 = (2 * precision * recall / f1_denominator) if f1_denominator else 0.0
-
-        return {
-            "total": self._total,
-            "correct": self._correct,
-            "tp": self._true_positive,
-            "tn": self._true_negative,
-            "fp": self._false_positive,
-            "fn": self._false_negative,
-            "accuracy": accuracy,
-            "precision": precision,
-            "recall": recall,
-            "f1": f1,
-        }
