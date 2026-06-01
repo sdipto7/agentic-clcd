@@ -296,14 +296,14 @@ def write_result(data: str) -> str:
 @tool
 def record_algorithms(data: str) -> str:
     """
-    Save the extracted pseudocode algorithms for the current pair.
+    Save the extracted algorithms for the current pair.
     Call this exactly once per pair, only after extracting algorithms
     from BOTH Java and Python fragments.
     Only call this on algorithm-based detection runs.
 
     Pass a JSON string with exactly these keys:
-        java_algorithm  : pseudocode extracted from the Java fragment
-        python_algorithm: pseudocode extracted from the Python fragment
+        java_algorithm  : algorithm extracted from the Java fragment
+        python_algorithm: algorithm extracted from the Python fragment
 
     Args:
         data: JSON string containing exactly these keys: java_algorithm, python_algorithm.
