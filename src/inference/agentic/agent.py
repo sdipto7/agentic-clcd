@@ -79,7 +79,7 @@ def get_react_prompt_template() -> str:
         "Question: the input task you must solve\n"
         "Thought: plan your next step\n"
         "Action: the action to take, must be one of [{tool_names}]\n"
-        "Action Input: a JSON object with keys matching the tool's parameter names.\n"
+        "Action Input: a JSON string assigned to `data` or leave blank for zero-arg tools.\n"
         "Observation: tool output\n"
         "... repeat Thought/Action/Action Input/Observation as needed ...\n"
         "Once write_result has been called and its confirmation appears in the Observation,\n"

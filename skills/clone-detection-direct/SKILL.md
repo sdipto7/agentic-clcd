@@ -1,33 +1,26 @@
 ---
 name: clone-detection-direct
-description: Use this skill to detect clones by comparing the functional behavior of raw Java and Python source code directly. Best suited for short or logically simple code fragments where the intent is easy to read from the code itself.
+description: Use this skill to directly detect clones by comparing the functional behavior of raw Java and Python source code. Best suited for short or logically simple code fragments where the intent is easy to read from the code itself.
 ---
 
 # Direct Cross-Language Clone Detection
-
-Use this skill when comparing **raw source code** fragments directly without extracting algorithms first.
+Use this skill when comparing raw source code fragments directly.
 
 ## Background
 Two code fragments are cross-language clones if they implement the same computational logic and produce the same output for the same input, regardless of programming language, syntax, naming conventions, or library choices used.
 
 ## Reasoning Approach - follow this order
-1. **Analyze the Java and Python code fragments independently**: identify their inputs, outputs, data structures, control flow, and how they handle edge cases and errors - purely in terms of behavior, not syntax.
-2. **Compare behavior**: check operation ordering, equivalent conditions, and matching handling of empty inputs, boundary values, and errors.
-3. **Decide**:
-   - Behaviorally identical on all inputs → `CLONE`
-   - Any behavioral difference exists → `NOT_CLONE`
-
-## Important Rules
-- Syntax is irrelevant. Semantics are not. Two fragments can look completely different and still be clones. Two fragments can look similar and not be clones. Judge behavior only.
-- If any behavioral difference exists on any valid input, the verdict
-  is `NOT_CLONE` - even if the overall structure looks similar.
+1. Analyze the Java and Python code fragments independently: identify their inputs, outputs, data structures, control flow, and how they handle edge cases and errors.
+2. Compare behavior: check operation ordering, equivalent conditions, and matching handling of empty inputs, boundary values, and errors.
+3. Judge whether both code fragments implement the same overall logic and produce the same output for the same input.
 
 ## Output
-You MUST call write_result first before giving your Final Answer.
+You MUST call write_result tool first before giving your Final Answer.
 
-Pass a JSON string to write_result with exactly these keys:
-**"verdict"**    : "CLONE" if functionally identical, "NOT_CLONE" otherwise
+Pass a JSON string to write_result tool with exactly these keys:
+
+**"verdict"** : "CLONE" if functionally identical, "NOT_CLONE" otherwise
 
 **"confidence"** : a float between 0.0 and 1.0 representing how certain you are of your verdict based on the evidence
 
-**"reasoning"**  : max 100 words citing the specific behavioral evidence that determined your verdict
+**"reasoning"** : max 100 words citing the specific behavioral evidence that determined your verdict

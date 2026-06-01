@@ -18,7 +18,7 @@ Determine whether the Java and Python code fragments below are clones.
 REASONING APPROACH — follow this order:
 1. Analyze the Java and Python code fragments independently: identify their inputs, outputs, data structures, control flow, and how they handle edge cases and errors.
 2. Compare their behavior: check operation ordering, equivalent conditions, and matching handling of empty inputs, boundary values, and errors.
-3. If any behavioral difference exists, they are NOT_CLONE - even if the overall structure looks similar.
+3. Judge whether both code fragments implement the same overall logic and produce the same output for the same input.
 
 Java fragment:
 {codeA}
@@ -42,22 +42,22 @@ Example output shape:
 ALGO_EXTRACTION_PROMPT: str = """You are an expert in program analysis and algorithm extraction.
 
 BACKGROUND:
-Your task is to convert a {language} code fragment into a precise, language-agnostic pseudocode algorithm. This pseudocode will be used 
+Your task is to convert a {language} code fragment into a precise, language-agnostic algorithm. This algorithm will be used 
 to compare the computational logic of two code fragments written in different programming languages to determine if they are clones.
 Accuracy and completeness are critical — every logical detail must be preserved.
 
 SOURCE CODE ({language}):
 {source_code}
 
-EXTRACTION RULES:
+EXTRACTION RULES - follow this order:
 1. Start with a single sentence summarizing what the overall code does.
 2. Describe every function including the entry point as a FUNCTION block.
 3. Inside each FUNCTION block, use numbered plain-English steps only. No syntax from any programming language whatsoever.
-4. Preserve all logic exactly — every condition, loop bound, branch, null check, empty collection check, early exit, and error path must appear. Do not simplify, merge, or omit anything.
-5. Use generic data structure names only: list, map, set, queue, stack. Never use language-specific names like ArrayList, HashMap, or dict.
-6. Do not include comments, type annotations, import descriptions, or any language-specific observations in the output.
+4. Preserve all logic exactly - every condition, loop bound, branch, validation check, early exit, and error path must appear.
+5. Use generic data structure names only: list, map, set, queue, stack.
+6. Do not include comments, type annotations, import descriptions, or any language-specific observations in the algorithm.
 
-OUTPUT FORMAT (plain text only — not JSON):
+OUTPUT FORMAT (plain text only):
 Summary: <one sentence describing overall behavior>
 FUNCTION <name>
   1. <first step in plain English>
@@ -84,8 +84,7 @@ Algorithm B (extracted from Python):
 REASONING APPROACH — follow this order:
 1. Read Algorithm A and Algorithm B independently: identify their entry points, the role of each function, data flow, and how they handle edge cases and errors.
 2. Compare step by step: align loops, conditions, data structure operations, and return values conceptually — not by line count.
-3. Minor wording differences in the pseudocode are acceptable. Missing branches, different operation orderings, or different return values are not - treat these as behavioral differences.
-4. If any behavioral difference exists on any valid input, the verdict is NOT_CLONE.
+3. Judge whether both algorithms implement the same overall logic and produce the same output for the same input.
 
 OUTPUT RULES:
 - Respond with a single JSON object only.
