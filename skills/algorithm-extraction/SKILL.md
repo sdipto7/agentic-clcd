@@ -1,5 +1,5 @@
 ---
-name: algorithm_extraction
+name: algorithm-extraction
 description: Use this skill to convert a source code fragment into language-agnostic pseudocode. Required before using clone_detection_algo. Apply once per Java fragment and once per Python fragment.
 ---
 

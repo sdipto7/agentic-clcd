@@ -1,5 +1,5 @@
 ---
-name: clone_detection_algo
+name: clone-detection-algo
 description: Use this skill to detect clones by comparing two extracted pseudocode algorithms. Best suited for longer or logically complex fragments where extracting the core algorithm first makes comparison clearer and more reliable. Requires algorithm_extraction to be applied to both code fragments first.
 ---
 

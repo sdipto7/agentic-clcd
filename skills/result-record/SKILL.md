@@ -1,5 +1,5 @@
 ---
-name: evaluation
+name: result-record
 description: Use when you have reached a final clone detection verdict and need to record it using the write_result tool.
 ---
 
