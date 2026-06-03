@@ -13,6 +13,7 @@ from langchain_core.tools import tool
 from src.core.constants import (
     COMPARE_TYPE_ALGORITHM,
     COMPARE_TYPE_SOURCE_CODE,
+    SKILL_CACHE_REFRESH_INTERVAL_COUNTER,
 )
 from src.core.logger import get_logger
 from src.io.result_writer import ResultWriter
@@ -21,6 +22,7 @@ from src.inference.agentic.skills import SKILL_REGISTRY
 logger = get_logger(__name__)
 
 _skill_body_cache: dict[str, str] = {}
+_invocation_counter: int = 0
 _active_writer: Optional[ResultWriter] = None
 _context_pair_id: Optional[str] = None
 _context_dataset: Optional[str] = None
@@ -34,6 +36,24 @@ _algorithms_by_pair: dict[str, dict[str, str]] = {}
 def get_recorded_algorithms() -> dict[str, dict[str, str]]:
     """Return all recorded algorithms collected during the run."""
     return _algorithms_by_pair
+
+
+def _clear_skill_cache() -> None:
+    """Clear the in-memory skill body cache of loaded skill instructions for fresh load."""
+    global _skill_body_cache
+
+    _skill_body_cache.clear()
+
+    logger.info("Skill body cache cleared.")
+
+
+def _refresh_skill_cache_if_needed() -> None:
+    """Clear the skill cache if the invocation counter has reached the refresh threshold."""
+    global _invocation_counter
+
+    if _invocation_counter >= SKILL_CACHE_REFRESH_INTERVAL_COUNTER:
+        _clear_skill_cache()
+        _invocation_counter = 0
 
 
 def set_active_result_writer(
@@ -52,7 +72,11 @@ def set_active_result_writer(
         ground_truth: 1 clone, 0 non-clone.
     """
     global _active_writer, _context_pair_id, _context_dataset, _context_ground_truth
-    global _pair_start_time, _write_result_called, _last_predicted_label
+    global _pair_start_time, _write_result_called, _last_predicted_label, _invocation_counter
+
+    if writer is not None:
+        _invocation_counter += 1
+        _refresh_skill_cache_if_needed()
 
     _active_writer = writer
     _context_pair_id = pair_id
@@ -149,7 +173,7 @@ def load_skill(data: str) -> str:
         return f"No skill name provided. Known skills: {known}"
 
     if skill_name in _skill_body_cache:
-        return _skill_body_cache[skill_name]
+        return f"Skill '{skill_name}' is already loaded. Use the instructions you already have."
 
     entry = SKILL_REGISTRY.get(skill_name)
     if not entry:

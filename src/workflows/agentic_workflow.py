@@ -121,6 +121,7 @@ def run_agentic_workflow(
             elapsed,
         )
 
+        # defensive cleanup to prevent information leakage across records
         set_active_result_writer(None)
 
         pace_api_call()
