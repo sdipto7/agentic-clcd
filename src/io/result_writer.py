@@ -33,12 +33,6 @@ class ResultWriter:
         self.csv_path = csv_path
         self.pipeline = pipeline
         self.model_alias = model_alias
-        self._true_positive = 0
-        self._true_negative = 0
-        self._false_positive = 0
-        self._false_negative = 0
-        self._total = 0
-        self._correct = 0
 
         os.makedirs(os.path.dirname(csv_path), exist_ok=True)
         self._file_exists = os.path.isfile(csv_path)
@@ -53,33 +47,6 @@ class ResultWriter:
             "model",
             "processing_time_seconds",
         ]
-
-    def _update_counts(self, ground_truth: int, predicted: str) -> None:
-        """Update running confusion counts from label and verdict."""
-        self._total += 1
-        expected = LABEL_TO_VERDICT.get(ground_truth, NOT_CLONE)
-        if predicted == expected:
-            self._correct += 1
-
-        is_predicted_clone = predicted == CLONE
-        is_ground_truth_positive = ground_truth == 1
-
-        if predicted == ERROR:
-            # Treat unresolved output as harming both precision and recall buckets.
-            if is_ground_truth_positive:
-                self._false_negative += 1
-            else:
-                self._false_positive += 1
-            return
-
-        if is_ground_truth_positive and is_predicted_clone:
-            self._true_positive += 1
-        elif is_ground_truth_positive and not is_predicted_clone:
-            self._false_negative += 1
-        elif not is_ground_truth_positive and is_predicted_clone:
-            self._false_positive += 1
-        else:
-            self._true_negative += 1
 
 
     def record_result(
@@ -125,5 +92,3 @@ class ResultWriter:
                 self._file_exists = True
 
             writer.writerow(row)
-
-        self._update_counts(ground_truth, predicted_label)
