@@ -1,6 +1,6 @@
 ---
-name: clone-detection-direct
-description: Use this skill to directly detect clones by comparing the functional behavior of raw Java and Python source code. Best suited for short or logically simple code fragments where the intent is easy to read from the code itself.
+name: clone_detection_direct
+description: Instructions for how to detect cross-language clones by directly comparing raw Java and Python source code through your own reasoning. Best suited for short or logically simple code fragments where the intent is easy to read from the code itself.
 ---
 
 # Direct Cross-Language Clone Detection

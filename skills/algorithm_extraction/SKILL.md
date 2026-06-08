@@ -1,13 +1,10 @@
 ---
-name: algorithm-extraction
-description: Use this skill to convert a source code fragment into language-agnostic algorithm. Required before using clone-detection-algo skill. Apply once per Java fragment and once per Python fragment.
+name: algorithm_extraction
+description: Instructions for how to extract a language-agnostic algorithm from source code through your own reasoning. Load this skill only once as it covers extraction rules for both Java and Python fragments.
 ---
 
 # Algorithm Extraction
-Use this skill to convert a source code fragment into a precise, language-agnostic algorithm. Follow these steps whenever you need a neutral plain-English description of a code fragment.
-
-## Background
-This algorithm will be used to compare the computational logic of two code fragments written in different programming languages to determine if they are clones. Accuracy and completeness are critical — every logical detail must be preserved.
+Load this skill once. Use the instructions to extract algorithms from both Java and Python code fragments before calling record_algorithms tool. Later, the algorithms will be used to compare the logic of two code fragments written in different programming languages to determine if they are clones.
 
 ## Extraction Rules - follow this order
 1. Start with a single sentence summarizing what the overall code does.
@@ -17,9 +14,13 @@ This algorithm will be used to compare the computational logic of two code fragm
 5. Use generic data structure names only: list, map, set, queue, stack.
 6. Do not include comments, type annotations, import descriptions, or any language-specific observations in the algorithm.
 
-## After extracting algorithms from BOTH the Java and Python code fragments
-You MUST call record_algorithms tool exactly once per pair, only after extracting both algorithms. Never call it after a single algorithm extraction.
+## Important Rules:
+- Extract Algorithm A from Java first.
+- Extract Algorithm B from Python second.
+- Only then call record_algorithms tool with both algorithms together.
+- Do NOT call record_algorithms tool after extracting just one algorithm.
 
+## After extracting algorithms from both Java and Python code fragments
 Pass a JSON string to record_algorithms tool with exactly these keys:
 
 **"java_algorithm"** : the algorithm you extracted from the Java fragment

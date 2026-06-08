@@ -1,10 +1,10 @@
 ---
-name: clone-detection-algo
-description: Use this skill to detect clones by comparing two extracted algorithms. Best suited for longer or logically complex fragments where extracting the core algorithm first makes comparison clearer and more reliable. Requires algorithm-extraction skill to be applied to both code fragments first.
+name: clone_detection_algo
+description: Instructions for how to detect cross-language clones by comparing two extracted algorithms through your own reasoning. Best suited for longer or logically complex fragments where extracting the core algorithm first makes comparison clearer and more reliable.
 ---
 
 # Algorithm-Based Clone Detection
-Apply this skill after both code fragments have been converted to language-agnostic algorithms with the help of algorithm-extraction skill.
+Apply this skill after both code fragments have been converted to language-agnostic algorithms by following the instructions of algorithm_extraction skill.
 
 ## Background
 You are comparing two algorithms - Algorithm A extracted from Java and Algorithm B extracted from Python. Your task is to determine whether both algorithms implement the same computational logic, meaning they are cross-language code clones. This comparison is purely at the logical level - language, syntax, and naming differences are already eliminated in the algorithm.
