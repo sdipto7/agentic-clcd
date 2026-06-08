@@ -155,7 +155,7 @@ def load_skill(data: str) -> str:
     Retrieve the full instructions for a skill by name.
     Call this before performing any task that a skill covers.
     Never assume skill content without loading it first.
-    Use list_skills first if you are unsure of the exact skill name.
+    Use list_skills first if you are unsure of which skill to use.
 
     Pass a JSON string with exactly this key:
         skill_name: exact name of the skill to load

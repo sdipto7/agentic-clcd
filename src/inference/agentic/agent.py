@@ -41,13 +41,15 @@ def build_agent_system_prompt() -> str:
         "regardless of language, syntax, or structure differences.\n\n"
         "RULES - follow these strictly:\n"
         "1. Use your available skills to guide your work.\n"
-        "2. Never assume or invent skill content - always load it first.\n"
-        "3. If you need a skill then follow the loaded skill instructions exactly.\n"
-        "4. You MUST call write_result before giving your Final Answer. "
-        "Never give a Final Answer without calling write_result first.\n"
-        "5. Never fabricate, simulate, or assume tool outputs - always call "
+        "2. Skills are instructions for you to follow — they are not tools "
+        "you can call. If you need a skill then load the skill with load_skill tool, then follow its "
+        "instructions through your own reasoning.\n"
+        "3. You MUST call write_result tool before giving your Final Answer. "
+        "Never put your verdict in the Final Answer text — always call "
+        "write_result tool first and wait for its confirmation.\n"
+        "4. Never fabricate, simulate, or assume tool outputs - always call "
         "the tool and wait for the real Observation before proceeding.\n\n"
-        f"Available skills (load with load_skill tool):\n{skill_lines}"
+        f"Available skills:\n{skill_lines}"
     )
 
 
@@ -112,7 +114,7 @@ def build_react_executor(llm: BaseLanguageModel) -> AgentExecutor:
     return AgentExecutor(
         agent=agent,
         tools=tools,
-        verbose=True,
+        verbose=False,
         max_iterations=AGENT_MAX_ITERATIONS,
-        handle_parsing_errors=True,
+        handle_parsing_errors=False,
     )
