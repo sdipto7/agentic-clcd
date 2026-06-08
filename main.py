@@ -143,7 +143,6 @@ def main() -> None:
                     "completion_tokens": cb.completion_tokens,
                     "total_tokens": cb.total_tokens,
                     "successful_requests": cb.successful_requests,
-                    "total_cost": cb.total_cost,
                 },
             )
 

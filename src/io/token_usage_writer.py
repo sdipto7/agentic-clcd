@@ -30,7 +30,7 @@ def save_token_usage_data(
         pairs: Number of pairs processed.
         elapsed_seconds: Total run time in seconds.
         token_usage: Aggregated usage counters (missing keys default to 0):
-            successful_requests, prompt_tokens, completion_tokens, total_tokens, total_cost.
+            successful_requests, prompt_tokens, completion_tokens, total_tokens.
         run_status: Status of the run (e.g., "success", "failed").
     Returns:
         None.
@@ -51,7 +51,6 @@ def save_token_usage_data(
         "prompt_tokens",
         "completion_tokens",
         "total_tokens",
-        "total_cost_usd",
     ]
 
     row = {
@@ -66,7 +65,6 @@ def save_token_usage_data(
         "prompt_tokens": int(token_usage.get("prompt_tokens", 0) or 0),
         "completion_tokens": int(token_usage.get("completion_tokens", 0) or 0),
         "total_tokens": int(token_usage.get("total_tokens", 0) or 0),
-        "total_cost_usd": f"{float(token_usage.get('total_cost', 0.0) or 0.0):.6f}",
     }
 
     with open(csv_path, "a", newline="", encoding="utf-8") as f:
