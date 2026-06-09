@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import csv
 import os
-from datetime import datetime
 from typing import Any, Dict
 
 from src.core.constants import OUTPUT_DIR_BY_PIPELINE
@@ -40,7 +39,6 @@ def save_token_usage_data(
     file_exists = os.path.isfile(csv_path)
 
     fieldnames = [
-        "timestamp_utc",
         "pipeline",
         "model",
         "dataset",
@@ -54,7 +52,6 @@ def save_token_usage_data(
     ]
 
     row = {
-        "timestamp_utc": datetime.utcnow().isoformat(timespec="seconds"),
         "pipeline": pipeline,
         "model": model_alias,
         "dataset": dataset,
