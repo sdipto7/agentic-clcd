@@ -125,9 +125,8 @@ Token usage is written in a `finally` block in `main.py`, so token usage is reco
 
 Columns:
 
-- `timestamp_utc`, `pipeline`, `model`, `dataset`, `pairs`, `elapsed_seconds`, `run_status`,
-  `successful_requests`, `prompt_tokens`, `completion_tokens`, `total_tokens`, `total_cost_usd`,
-  `accuracy`, `precision`, `recall`, `f1`
+- `pipeline`, `model`, `dataset`, `pairs`, `elapsed_seconds`, `run_status`,
+  `successful_requests`, `prompt_tokens`, `completion_tokens`, `total_tokens`
 
 Token logging is implemented in `src/io/token_usage_writer.py`.
 
