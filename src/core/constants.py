@@ -35,9 +35,9 @@ DATASET_FILE_MAP: dict[str, str] = {
 
 MODEL_MAP: dict[str, str] = {
     "deepseek-v3.2": "deepseek/deepseek-v3.2",
-    "gpt-4o": "openai/gpt-4o-2024-11-20",
-    "claude-3.5-haiku": "anthropic/claude-3.5-haiku",
     "llama-3.3-nemotron": "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+    "claude-3-haiku": "anthropic/claude-3-haiku",
+    "gpt-4o-mini": "openai/gpt-4o-mini-2024-07-18",
 }
 
 OPENAI_API_BASE_URL: str = "https://openrouter.ai/api/v1"
