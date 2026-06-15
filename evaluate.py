@@ -173,10 +173,10 @@ def _compute_classification_metrics(rows: Iterable[dict[str, str]]) -> Dict[str,
         "true_negative": true_negative,
         "false_positive": false_positive,
         "false_negative": false_negative,
-        "accuracy": accuracy,
-        "precision": precision,
-        "recall": recall,
-        "f1_score": f1_score,
+        "accuracy": f"{accuracy:.2f}",
+        "precision": f"{precision:.2f}",
+        "recall": f"{recall:.2f}",
+        "f1_score": f"{f1_score:.2f}",
     }
 
 
