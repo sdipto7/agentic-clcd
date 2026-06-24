@@ -104,12 +104,8 @@ def run_agentic_workflow(
 
             writer.record_result(
                 pair_id=record["pair_id"],
-                dataset=record["dataset"],
                 ground_truth=record["label"],
                 predicted_label=ERROR,
-                confidence=0.0,
-                reasoning="Agent finished without write_result or tool failure.",
-                processing_time_seconds=elapsed,
             )
 
         logger.info(

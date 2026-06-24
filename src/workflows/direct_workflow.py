@@ -37,7 +37,7 @@ def run_direct_workflow(
         llm: Chat model from :mod:`src.llm`.
         records: Normalized dataset rows.
         writer: ResultWriter for this run.
-        model_alias: Model key (for logging only; already on writer).
+        model_alias: Model key for tqdm label.
     """
     for position, record in enumerate(tqdm(records, desc=f"direct/{model_alias}"), start=1):
         t0 = time.perf_counter()
@@ -56,12 +56,8 @@ def run_direct_workflow(
 
         writer.record_result(
             pair_id=pair_id,
-            dataset=record["dataset"],
             ground_truth=record["label"],
             predicted_label=verdict,
-            confidence=confidence,
-            reasoning=reasoning,
-            processing_time_seconds=elapsed,
         )
 
         logger.info(

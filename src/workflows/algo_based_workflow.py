@@ -77,12 +77,8 @@ def run_algo_based_workflow(
 
         writer.record_result(
             pair_id=pair_id,
-            dataset=record["dataset"],
             ground_truth=record["label"],
             predicted_label=verdict,
-            confidence=confidence,
-            reasoning=reasoning,
-            processing_time_seconds=elapsed,
         )
 
         if verdict != ERROR:

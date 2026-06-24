@@ -105,7 +105,7 @@ def main() -> None:
         logger.info("All pairs are already processed successfully.")
         return
 
-    writer = ResultWriter(csv_path, pipeline=pipeline, model_alias=model_alias)
+    writer = ResultWriter(csv_path)
 
     logger.info(
         "Starting run pipeline=%s model=%s dataset=%s pairs=%s",

@@ -113,7 +113,7 @@ Example:
 
 - `output/direct/results_deepseek_v3_xlcost.csv`
 
-Rows include the pair id, dataset, ground truth, predicted label, confidence, reasoning, and processing time.
+Rows include the pair id, ground truth, predicted label.
 
 ### 2) Run-level token usage CSV (crash-safe)
 
@@ -121,7 +121,7 @@ Each run appends one row to:
 
 - `output/<pipeline>/token_usage.csv`
 
-Token usage is written in a `finally` block in `main.py`, so token usage is recorded even when the run is interrupted or crashes (the status will reflect that).
+Token usage is recorded even when the run is interrupted or crashes (the status will reflect that).
 
 Columns:
 

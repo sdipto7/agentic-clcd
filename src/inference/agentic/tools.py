@@ -295,26 +295,21 @@ def write_result(data: str) -> str:
 
     _active_writer.record_result(
         pair_id=_context_pair_id,
-        dataset=_context_dataset,
         ground_truth=_context_ground_truth,
         predicted_label=verdict,
-        confidence=confidence,
-        reasoning=reasoning,
-        processing_time_seconds=elapsed,
     )
     _write_result_called = True
     _last_predicted_label = verdict
 
     logger.info(
-        "write_result tool: pair_id=%s ground_truth=%s predicted=%s conf=%.3f time=%.3fs",
+        "write_result tool: pair_id=%s ground_truth=%s predicted=%s time=%.3fs",
         _context_pair_id,
         _context_ground_truth,
         verdict,
-        confidence,
         elapsed,
     )
 
-    return f"Recorded result for {_context_pair_id}: {verdict} (confidence {confidence:.3f})."
+    return f"Recorded result for {_context_pair_id}."
 
 
 @tool
